@@ -32,7 +32,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [005](005.md) | Application ports + use cases | M2 | DONE |
 | [006](006.md) | Drizzle schema + migration 0001 | M2 | DONE |
 | [007](007.md) | Repositories + integration tests (real Postgres, no Docker in sandbox) | M2 | DONE |
-| [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | TODO |
+| [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | DONE |
 | [009](009.md) | LLM port, adapters, budget guard | M2 | DONE |
 | [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | TODO |
 | [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | TODO |
