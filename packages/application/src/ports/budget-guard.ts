@@ -21,7 +21,7 @@ export interface CostEstimator {
   actualEmbedCostUsd(model: string, promptTokens: number): number;
 }
 
-export class GuardedLlmPort implements LlmPort {
+export class GuardedLlmPort {
   constructor(
     private readonly inner: LlmPort,
     private readonly store: BudgetStore,

@@ -34,12 +34,13 @@ Every task file (`NNN.md`) has exactly these sections:
 | [007](007.md) | Repositories + integration tests (real Postgres, no Docker in sandbox) | M2 | DONE |
 | [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | DONE |
 | [009](009.md) | LLM port, adapters, budget guard | M2 | DONE |
-| [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | TODO |
+| [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | DONE |
 | [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | TODO |
 | [012](012.md) | Web: Next.js auth + live board | M2 | TODO |
 | [013](013.md) | Docker Compose stack | M2 | TODO |
 | [014](014.md) | CI pipeline + chaos test | M2 | TODO |
 | [015](015.md) | Atomic budget increment — primitive proven | M2 | DONE |
 | [016](016.md) | Wire budget lock into GuardedLlmPort | M2 | TODO |
+| [017](017.md) | Known limitation: simultaneous embed redelivery race | M2→M5 | TODO |
 
 Milestones beyond M2 get tasks when their design is approved — not before. Speculative tasks rot.

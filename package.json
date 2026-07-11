@@ -33,12 +33,5 @@
     "ioredis": "^5.11.1",
     "pino": "^9.14.0",
     "postgres": "^3.4.9"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "argon2",
-      "esbuild",
-      "msgpackr-extract"
-    ]
   }
 }

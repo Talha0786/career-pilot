@@ -1,5 +1,5 @@
 import { JobPosting, asUserId, type Result, type DomainError } from '@careerpilot/domain';
-import type { UnitOfWork, Actor } from '../ports/repositories.js';
+import type { UnitOfWork, Actor } from '../../ports/repositories.js';
 
 export interface CreateManualJobInput {
   title: string;

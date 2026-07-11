@@ -47,7 +47,7 @@ describe('GuardedLlmPort — the raw port must never be reachable without this',
   });
 
   it('records a failed invocation too, with zero cost', async () => {
-    const failing: import('../src/ports/llm.port.js').LlmPort = {
+    const failing: import('../../src/ports/llm.port.js').LlmPort = {
       async embed() {
         return { ok: false, error: { code: 'provider_unavailable', message: 'connection refused' } };
       },
