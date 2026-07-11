@@ -28,16 +28,17 @@ Every task file (`NNN.md`) has exactly these sections:
 | [001](001.md) | Monorepo scaffold, tooling, boundary lint | M2 | DONE |
 | [002](002.md) | Shared kernel: Result, IDs, DomainEvent | M2 | DONE |
 | [003](003.md) | Domain: User, JobPosting, Application aggregates | M2 | DONE |
-| [004](004.md) | Contracts package (zod DTOs) | M2 | TODO |
-| [005](005.md) | Application ports + use cases | M2 | TODO |
+| [004](004.md) | Contracts package (zod DTOs) | M2 | DONE |
+| [005](005.md) | Application ports + use cases | M2 | DONE |
 | [006](006.md) | Drizzle schema + migration 0001 | M2 | TODO |
 | [007](007.md) | Repositories + Testcontainers integration tests | M2 | TODO |
 | [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | TODO |
-| [009](009.md) | LLM port, adapters, budget guard | M2 | TODO |
+| [009](009.md) | LLM port, adapters, budget guard | M2 | DONE |
 | [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | TODO |
 | [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | TODO |
 | [012](012.md) | Web: Next.js auth + live board | M2 | TODO |
 | [013](013.md) | Docker Compose stack | M2 | TODO |
 | [014](014.md) | CI pipeline + chaos test | M2 | TODO |
+| [015](015.md) | Atomic budget increment (concurrency gap) | M2 | TODO |
 
 Milestones beyond M2 get tasks when their design is approved — not before. Speculative tasks rot.
