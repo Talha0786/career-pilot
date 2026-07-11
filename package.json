@@ -19,10 +19,26 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "^4.19.2",
-    "turbo": "^2.3.3"
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "bullmq": "^5.80.0",
+    "drizzle-kit": "^0.30.6",
+    "drizzle-orm": "^0.38.4",
+    "ioredis": "^5.11.1",
+    "pino": "^9.14.0",
+    "postgres": "^3.4.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "esbuild",
+      "msgpackr-extract"
+    ]
   }
 }

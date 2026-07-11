@@ -30,8 +30,8 @@ Every task file (`NNN.md`) has exactly these sections:
 | [003](003.md) | Domain: User, JobPosting, Application aggregates | M2 | DONE |
 | [004](004.md) | Contracts package (zod DTOs) | M2 | DONE |
 | [005](005.md) | Application ports + use cases | M2 | DONE |
-| [006](006.md) | Drizzle schema + migration 0001 | M2 | TODO |
-| [007](007.md) | Repositories + Testcontainers integration tests | M2 | TODO |
+| [006](006.md) | Drizzle schema + migration 0001 | M2 | DONE |
+| [007](007.md) | Repositories + integration tests (real Postgres, no Docker in sandbox) | M2 | DONE |
 | [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | TODO |
 | [009](009.md) | LLM port, adapters, budget guard | M2 | DONE |
 | [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | TODO |
