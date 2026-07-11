@@ -18,12 +18,21 @@ export interface JobPostedPayload {
  * (application/test/unit/discovery.test.ts already proves the use case is
  * idempotent; this test proves the QUEUE round-trip is too).
  */
+export interface WsEvent {
+  userId: string;
+  jobId: string;
+  status: 'ready' | 'failed';
+}
+
 export function createJobPostedWorker(deps: {
   connection: Redis;
   jobPostings: JobPostingRepository;
   llm: GuardedLlmPort;
   embeddingModel: string;
   logger: Logger;
+  /** Worker → Redis pub/sub → api → browser (M2 design §2). Optional so unit
+   * tests don't need a live subscriber to exercise the handler. */
+  publishWsEvent?: (event: WsEvent) => Promise<void>;
 }): Worker<JobPostedPayload> {
   const embedJobPosting = makeEmbedJobPostingUseCase({
     jobPostings: deps.jobPostings,
@@ -48,6 +57,9 @@ export function createJobPostedWorker(deps: {
         // provider_unavailable) DO benefit from retry, so we let those throw.
         if (result.error.code === 'budget_exceeded' || result.error.code === 'not_found') {
           log.warn({ code: result.error.code }, 'embedding not retried');
+          if (result.error.code === 'budget_exceeded') {
+            await deps.publishWsEvent?.({ userId: job.data.userId, jobId: job.data.jobPostingId, status: 'failed' });
+          }
           return;
         }
         log.error({ error: result.error }, 'embedding failed, will retry');
@@ -55,6 +67,7 @@ export function createJobPostedWorker(deps: {
       }
 
       log.info('embedding complete');
+      await deps.publishWsEvent?.({ userId: job.data.userId, jobId: job.data.jobPostingId, status: 'ready' });
     },
     { connection: deps.connection, concurrency: 4 },
   );

@@ -4,4 +4,8 @@ export * from './ports/budget-guard.js';
 export * from './auth/use-cases.js';
 export * from './discovery/commands/create-manual-job.js';
 export * from './discovery/commands/embed-job-posting.js';
+export * from './discovery/queries/list-jobs.js';
+export * from './discovery/queries/get-job.js';
 export * from './pipeline/queries/get-board.js';
+export * from './pipeline/commands/create-application.js';
+export * from './pipeline/commands/update-stage.js';

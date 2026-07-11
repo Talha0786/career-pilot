@@ -35,7 +35,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [008](008.md) | Transactional outbox + relay (ADR-007) | M2 | DONE |
 | [009](009.md) | LLM port, adapters, budget guard | M2 | DONE |
 | [010](010.md) | Worker: BullMQ + idempotent embed handler | M2 | DONE |
-| [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | TODO |
+| [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | DONE |
 | [012](012.md) | Web: Next.js auth + live board | M2 | TODO |
 | [013](013.md) | Docker Compose stack | M2 | TODO |
 | [014](014.md) | CI pipeline + chaos test | M2 | TODO |
