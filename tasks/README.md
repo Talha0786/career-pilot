@@ -40,7 +40,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [013](013.md) | Docker Compose stack | M2 | TODO |
 | [014](014.md) | CI pipeline + chaos test | M2 | TODO |
 | [015](015.md) | Atomic budget increment — primitive proven | M2 | DONE |
-| [016](016.md) | Wire budget lock into GuardedLlmPort | M2 | TODO |
+| [016](016.md) | Wire budget lock into GuardedLlmPort | M2 | DONE |
 | [017](017.md) | Known limitation: simultaneous embed redelivery race | M2→M5 | TODO |
 
 Milestones beyond M2 get tasks when their design is approved — not before. Speculative tasks rot.
