@@ -1,0 +1,19 @@
+:80 {
+	# Single-origin entry point (M2 design §7) — the session cookie's
+	# SameSite=Lax never crosses an origin boundary because everything is
+	# served from here. /api and /ws go straight to the api service; the
+	# web app's own next.config.ts rewrites would forward them there too,
+	# but routing directly here avoids the extra hop in the compose stack.
+	handle /api/* {
+		# Strip /api — the api service's own routes have no prefix (same
+		# convention as apps/web/next.config.ts's rewrites destination).
+		uri strip_prefix /api
+		reverse_proxy api:8080
+	}
+	handle /ws {
+		reverse_proxy api:8080
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

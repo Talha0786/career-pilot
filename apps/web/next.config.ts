@@ -7,6 +7,10 @@ import type { NextConfig } from 'next';
 const API_ORIGIN = process.env.API_ORIGIN ?? 'http://localhost:8080';
 
 const nextConfig: NextConfig = {
+  // Self-contained server bundle with only the node_modules it actually
+  // traces as used — the production Dockerfile copies just this output,
+  // not the whole monorepo's node_modules (task 013).
+  output: 'standalone',
   async rewrites() {
     return [
       { source: '/api/:path*', destination: `${API_ORIGIN}/:path*` },

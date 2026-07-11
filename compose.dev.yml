@@ -1,0 +1,37 @@
+# Postgres + Redis only — the apps run via `pnpm dev` on the host, hitting
+# these through the DATABASE_URL/REDIS_URL defaults in .env.example
+# (localhost:5432 / localhost:6379). This is the fast inner-loop setup;
+# `docker-compose.yml` is the full one-command stack (task 013).
+#
+# Usage: docker compose -f compose.dev.yml up -d
+name: careerpilot-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16@sha256:1d533553fefe4f12e5d80c7b80622ba0c382abb5758856f52983d8789179f0fb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careerpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careerpilot}
+      POSTGRES_DB: ${POSTGRES_DB:-careerpilot}
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-careerpilot}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-dev-data:
