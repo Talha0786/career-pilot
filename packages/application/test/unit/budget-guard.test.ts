@@ -91,4 +91,39 @@ describe('GuardedLlmPort — the raw port must never be reachable without this',
     expect(blocked).toBe(3);
     expect(inner.callCount).toBe(2); // blocked calls never reach the inner port
   });
+
+  it('task 016: TRULY CONCURRENT guard.embed() calls are serialized per user — exact count, not "usually right"', async () => {
+    const inner = new FakeLlmPort();
+    const store = new InMemoryBudgetStore();
+    // Same sizing logic as the sequential test above: 2 calls' worth of
+    // ESTIMATE plus slack, so exactly 2 of N fire concurrently should win.
+    const guard = new GuardedLlmPort(inner, store, new FakeCostEstimator(), 0.0003, 'fake-provider');
+
+    // All 10 fired in the same tick via Promise.all — this is what the
+    // sequential test above explicitly could NOT exercise. Without task
+    // 016's lock, every one of these would read spend=0 before any commits
+    // and all 10 would pass the check.
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () => guard.embed({ input: 'short text here', model: 'm' }, ctx)),
+    );
+
+    const oks = results.filter(isOk).length;
+    expect(oks).toBe(2);
+    expect(inner.callCount).toBe(2);
+    expect(store.records.filter((r) => r.status === 'ok')).toHaveLength(2);
+  });
+
+  it('does not serialize DIFFERENT users against each other', async () => {
+    const inner = new FakeLlmPort();
+    const store = new InMemoryBudgetStore();
+    const guard = new GuardedLlmPort(inner, store, new FakeCostEstimator(), 10, 'fake-provider');
+
+    const results = await Promise.all([
+      guard.embed({ input: 'a', model: 'm' }, { userId: 'user-a', refId: 'r1', context: 'matching' }),
+      guard.embed({ input: 'b', model: 'm' }, { userId: 'user-b', refId: 'r2', context: 'matching' }),
+    ]);
+
+    expect(results.every(isOk)).toBe(true);
+    expect(inner.callCount).toBe(2);
+  });
 });

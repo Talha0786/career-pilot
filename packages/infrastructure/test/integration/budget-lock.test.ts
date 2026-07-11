@@ -3,6 +3,9 @@ import { withTestDb, resetTestDb } from './setup.js';
 import { PostgresBudgetStore } from '../../src/llm/postgres-budget-store.js';
 import { createDb } from '../../src/db/client.js';
 import { sql } from 'drizzle-orm';
+import { GuardedLlmPort } from '@careerpilot/application';
+import type { LlmPort } from '@careerpilot/application';
+import { isOk } from '@careerpilot/domain';
 
 const TEST_URL = process.env.TEST_DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot_test';
 const USER_ID = '018f0000-0000-7000-8000-000000000009';
@@ -77,6 +80,41 @@ describe('PostgresBudgetStore.withUserBudgetLock — closes task 015 for real', 
     const succeeded = results.filter(Boolean).length;
     // THE fix, proven: the advisory lock serializes the check-then-write per
     // user, so exactly floor(budget/cost) = 3 succeed, every run, not on average.
+    expect(succeeded).toBe(3);
+  });
+});
+
+describe('GuardedLlmPort.embed() — task 016, the same proof one layer up through the actual guard', () => {
+  beforeEach(async () => {
+    await withTestDb(async (db) => resetTestDb(db));
+    await withTestDb(async (db) => {
+      await db.execute(sql`
+        INSERT INTO users (id, email, password_hash) VALUES
+        (${USER_ID}, 'guard-lock-test@example.com', '$argon2id$v=19$m=65536,t=3,p=4$x$y')
+      `);
+    });
+  });
+
+  it('exactly 3 of 20 concurrent guard.embed() calls succeed against a real PostgresBudgetStore', async () => {
+    const connections = await Promise.all(Array.from({ length: 20 }, () => createDb(TEST_URL)));
+    const stubLlm: LlmPort = {
+      async embed(req) {
+        return { ok: true, value: { vector: [0.1, 0.2, 0.3], model: req.model, promptTokens: 1 } };
+      },
+    };
+    const estimator = { estimateEmbedCostUsd: () => 0.0001, actualEmbedCostUsd: () => 0.0001 };
+    const BUDGET = 0.00035; // same reasoning as the store-level test above: floor(0.00035/0.0001) = 3
+
+    const guards = connections.map(
+      (c) => new GuardedLlmPort(stubLlm, new PostgresBudgetStore(c.db), estimator, BUDGET, 'test'),
+    );
+
+    const results = await Promise.all(
+      guards.map((g) => g.embed({ input: 'x', model: 'm' }, { userId: USER_ID, refId: 'r', context: 'matching' })),
+    );
+    await Promise.all(connections.map((c) => c.close()));
+
+    const succeeded = results.filter(isOk).length;
     expect(succeeded).toBe(3);
   });
 });

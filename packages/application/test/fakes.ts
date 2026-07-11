@@ -21,6 +21,7 @@ export class FakeLlmPort implements LlmPort {
 export class InMemoryBudgetStore implements BudgetStore {
   public records: AiInvocationRecord[] = [];
   private spend = new Map<string, number>();
+  private locks = new Map<string, Promise<unknown>>();
 
   setSpend(userId: string, amountUsd: number): void {
     this.spend.set(userId, amountUsd);
@@ -33,6 +34,21 @@ export class InMemoryBudgetStore implements BudgetStore {
   async recordInvocation(record: AiInvocationRecord): Promise<void> {
     this.records.push(record);
     this.spend.set(record.userId, (this.spend.get(record.userId) ?? 0) + record.costUsd);
+  }
+
+  /**
+   * Single-flight per user id — the in-memory equivalent of
+   * PostgresBudgetStore's pg_advisory_xact_lock (task 016). Chains onto
+   * whatever's currently pending for this user so calls for the SAME user
+   * run strictly one at a time; different users never block each other.
+   */
+  async withUserBudgetLock<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+    // `prior` is always a settle-quietly promise (see the .catch below), so
+    // chaining with a single onFulfilled handler is enough — it never rejects.
+    const prior = this.locks.get(userId) ?? Promise.resolve();
+    const run = prior.then(() => fn());
+    this.locks.set(userId, run.catch(() => undefined));
+    return run;
   }
 }
 

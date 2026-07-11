@@ -12,6 +12,12 @@ export interface BudgetStore {
   /** Current month-to-date spend in USD for this user. */
   getMonthlySpend(userId: string): Promise<number>;
   recordInvocation(record: AiInvocationRecord): Promise<void>;
+  /**
+   * Serializes the whole check-dispatch-record sequence for one user
+   * (task 015/016). Optional so a store that doesn't support locking still
+   * satisfies the interface — the guard just runs unlocked, same as before.
+   */
+  withUserBudgetLock?<T>(userId: string, fn: () => Promise<T>): Promise<T>;
 }
 
 export interface CostEstimator {
@@ -32,6 +38,23 @@ export class GuardedLlmPort {
   ) {}
 
   async embed(
+    req: EmbedRequest,
+    ctx: { userId: string; refId: string; context: AiInvocationRecord['context'] },
+  ): Promise<Result<EmbedResponse, LlmError | DomainError>> {
+    // Task 016: check-dispatch-record is serialized per user when the store
+    // supports it, closing the read-then-write race a plain read-check
+    // leaves open under concurrency (task 015). This DOES hold the lock for
+    // the duration of the outbound LLM call, not just the DB bookkeeping —
+    // a deliberate simplification (correctness over per-user throughput for
+    // M2's scale); a future version could narrow the critical section to
+    // just the spend check + a reservation, at the cost of more moving parts.
+    if (this.store.withUserBudgetLock) {
+      return this.store.withUserBudgetLock(ctx.userId, () => this.doEmbed(req, ctx));
+    }
+    return this.doEmbed(req, ctx);
+  }
+
+  private async doEmbed(
     req: EmbedRequest,
     ctx: { userId: string; refId: string; context: AiInvocationRecord['context'] },
   ): Promise<Result<EmbedResponse, LlmError | DomainError>> {
