@@ -6,11 +6,13 @@ allowBuilds:
   argon2: true
   esbuild: true
   msgpackr-extract: true
+  sharp: true
 
 onlyBuiltDependencies:
   - argon2
   - esbuild
   - msgpackr-extract
+  - sharp
 
 overrides:
   ioredis: '5.11.1'

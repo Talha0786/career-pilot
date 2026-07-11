@@ -52,14 +52,19 @@ export function createJobPostedWorker(deps: {
       });
 
       if (!result.ok) {
+        // The use case (embed-job-posting.ts) already persisted
+        // embedding_status='failed' unconditionally on any LLM error — so
+        // the board must reflect THAT now, not stay a spinner until some
+        // hypothetical later retry. If a retry succeeds, a second 'ready'
+        // push supersedes this one; that's an honest depiction of "we hit
+        // trouble, retrying" rather than silence.
+        await deps.publishWsEvent?.({ userId: job.data.userId, jobId: job.data.jobPostingId, status: 'failed' });
+
         // BudgetExceeded and NotFound are not worth BullMQ's retry backoff —
         // they won't resolve by waiting. Provider errors (rate_limited,
         // provider_unavailable) DO benefit from retry, so we let those throw.
         if (result.error.code === 'budget_exceeded' || result.error.code === 'not_found') {
           log.warn({ code: result.error.code }, 'embedding not retried');
-          if (result.error.code === 'budget_exceeded') {
-            await deps.publishWsEvent?.({ userId: job.data.userId, jobId: job.data.jobPostingId, status: 'failed' });
-          }
           return;
         }
         log.error({ error: result.error }, 'embedding failed, will retry');
