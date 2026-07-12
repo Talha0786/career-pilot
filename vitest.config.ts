@@ -10,10 +10,13 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/domain/src/**', 'packages/application/src/**'],
       // events.ts files are const maps with no logic; testing them would be
-      // theatre. llm.port.ts/repositories.ts are pure `interface`/`type`
-      // declarations — TypeScript erases them entirely at compile time, so
-      // there is no runtime code to cover, only types.
-      exclude: ['**/*.test.ts', '**/index.ts', '**/events.ts', '**/ports/llm.port.ts', '**/ports/repositories.ts'],
+      // theatre. llm.port.ts/repositories.ts/connector.port.ts are pure
+      // `interface`/`type` declarations — TypeScript erases them entirely at
+      // compile time, so there is no runtime code to cover, only types.
+      exclude: [
+        '**/*.test.ts', '**/index.ts', '**/events.ts',
+        '**/ports/llm.port.ts', '**/ports/repositories.ts', '**/ports/connector.port.ts',
+      ],
       // Gate from M2 design §8. Domain + application carry the invariants;
       // adapters are covered by integration tests instead.
       thresholds: { lines: 90, functions: 90, branches: 85, statements: 90 },

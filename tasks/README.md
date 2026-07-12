@@ -51,7 +51,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [024](024.md) | Document engine: structured model → PDF/DOCX rendering | M3 | TODO |
 | [025](025.md) | Web UI: profile editor, import confirm flow, document history | M3 | TODO |
 | [026](026.md) | Connector SDK: ConnectorPort, compliance classes, contract test-kit | M4 | DONE |
-| [027](027.md) | Schema: connector_configs, ingestion_runs; extend job_postings | M4 | TODO |
+| [027](027.md) | Schema: connector_configs, ingestion_runs; extend job_postings | M4 | DONE |
 | [028](028.md) | Class A connectors: Greenhouse, Lever, Ashby, USAJobs, RSS, manual | M4 | TODO |
 | [029](029.md) | Scheduler + ingestion pipeline + dedup | M4 | TODO |
 | [030](030.md) | Class B: capture ingest endpoint | M4 | TODO |

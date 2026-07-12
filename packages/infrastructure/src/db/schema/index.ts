@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
-  pgTable, uuid, text, timestamp, jsonb, integer, numeric,
+  pgTable, uuid, text, timestamp, jsonb, integer, numeric, boolean,
   pgEnum, index, uniqueIndex, customType,
 } from 'drizzle-orm/pg-core';
 
@@ -42,6 +42,13 @@ export const invocationContextEnum = pgEnum('invocation_context', [
   'matching', 'tailoring', 'interview', 'agent', 'parsing',
 ]);
 
+// M4 (task 027) — connector configuration/health tracking + ingestion history,
+// plus the job_postings columns M2 deliberately left out (design §2).
+export const postingStatusEnum = pgEnum('posting_status', ['active', 'closed', 'expired']);
+export const remoteTypeEnum = pgEnum('remote_type', ['remote', 'hybrid', 'onsite', 'unknown']);
+export const connectorHealthEnum = pgEnum('connector_health', ['healthy', 'degraded', 'disabled']);
+export const ingestionStatusEnum = pgEnum('ingestion_status', ['running', 'ok', 'partial', 'failed']);
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   email: text('email').notNull(),
@@ -59,11 +66,26 @@ export const jobPostings = pgTable('job_postings', {
   id: uuid('id').primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   sourceConnectorKey: text('source_connector_key').notNull().default('manual'),
+  // M4 (task 027). Nullable — legacy/manual rows have no connector-native id.
+  // A unique index on (source_connector_key, external_id) enforces "don't
+  // ingest the same posting from the same source twice"; Postgres treats
+  // every NULL as distinct for uniqueness purposes, so any number of NULL
+  // rows (all pre-M4 rows, and every manual paste) coexist without collision
+  // — no backfill needed for existing data (migration 0003's comment).
+  externalId: text('external_id'),
   url: text('url'),
   urlHash: text('url_hash'),
   company: text('company'),
   title: text('title').notNull(),
   descriptionMd: text('description_md').notNull(),
+  status: postingStatusEnum('status').notNull().default('active'),
+  location: jsonb('location'),
+  remote: remoteTypeEnum('remote').notNull().default('unknown'),
+  salary: jsonb('salary'),
+  postedAt: timestamp('posted_at', { withTimezone: true }),
+  // Cross-source dedup group (task 029). Not a FK — it's a shared opaque
+  // grouping key, not a row identifier of another table.
+  dedupGroupId: uuid('dedup_group_id'),
   embeddingStatus: embeddingStatusEnum('embedding_status').notNull().default('pending'),
   embeddingModel: text('embedding_model'),
   embedding: vector('embedding'),
@@ -71,6 +93,49 @@ export const jobPostings = pgTable('job_postings', {
 }, (t) => ({
   byUserIngested: index('job_postings_user_ingested_idx').on(t.userId, t.ingestedAt.desc()),
   byUrlHash: index('job_postings_url_hash_idx').on(t.urlHash),
+  bySourceExternalId: uniqueIndex('job_postings_source_external_unique').on(t.sourceConnectorKey, t.externalId),
+  byDedupGroup: index('job_postings_dedup_group_idx').on(t.dedupGroupId),
+}));
+
+/** User-configured connector instances (task 027, design §2). */
+export const connectorConfigs = pgTable('connector_configs', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  connectorKey: text('connector_key').notNull(),
+  displayName: text('display_name').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  scheduleCron: text('schedule_cron'),
+  config: jsonb('config').notNull().default({}),
+  // Points into the secrets store (env var name / secrets-manager key) —
+  // NEVER a raw credential/API key value. Security model §4.
+  credentialsRef: text('credentials_ref'),
+  health: connectorHealthEnum('health').notNull().default('healthy'),
+  consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byUser: index('connector_configs_user_idx').on(t.userId),
+  byUserConnectorKey: uniqueIndex('connector_configs_user_connector_unique').on(t.userId, t.connectorKey),
+}));
+
+/**
+ * Append-only ingestion history (task 027/029), same enforcement posture as
+ * `stage_transitions`/`outbox`: application code writes with `start()`
+ * (INSERT) then `complete()` (UPDATE of the SAME row's terminal fields
+ * only, never a historical row) — no row is ever deleted or rewritten to a
+ * different run's data.
+ */
+export const ingestionRuns = pgTable('ingestion_runs', {
+  id: uuid('id').primaryKey(),
+  connectorConfigId: uuid('connector_config_id').notNull().references(() => connectorConfigs.id, { onDelete: 'cascade' }),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  status: ingestionStatusEnum('status').notNull().default('running'),
+  stats: jsonb('stats').notNull().default({ fetched: 0, deduped: 0, inserted: 0 }),
+  error: text('error'),
+}, (t) => ({
+  byConnectorConfig: index('ingestion_runs_connector_config_idx').on(t.connectorConfigId, t.startedAt.desc()),
 }));
 
 export const applications = pgTable('applications', {

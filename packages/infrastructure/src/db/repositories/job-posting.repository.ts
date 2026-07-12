@@ -24,6 +24,17 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  /** Ingestion-path lookup (task 027/029) — the pre-write half of the unique index check. */
+  async findBySourceAndExternalId(sourceConnectorKey: string, externalId: string): Promise<JobPosting | null> {
+    const rows = await this.db
+      .select()
+      .from(jobPostings)
+      .where(and(eq(jobPostings.sourceConnectorKey, sourceConnectorKey), eq(jobPostings.externalId, externalId)))
+      .limit(1);
+    const row = rows[0];
+    return row ? this.toDomain(row) : null;
+  }
+
   async listForUser(
     userId: ReturnType<typeof asUserId>,
     opts: { cursor?: string; limit: number },
@@ -58,11 +69,18 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
         id: snap.id,
         userId: snap.userId,
         sourceConnectorKey: snap.sourceConnectorKey,
+        externalId: snap.externalId,
         url: snap.url,
         urlHash: snap.urlHash,
         company: snap.company,
         title: snap.title,
         descriptionMd: snap.descriptionMd,
+        status: snap.status,
+        location: snap.location,
+        remote: snap.remote,
+        salary: snap.salary,
+        postedAt: snap.postedAt,
+        dedupGroupId: snap.dedupGroupId,
         embeddingStatus: snap.embeddingStatus,
         embeddingModel: snap.embeddingModel,
         embedding: snap.embedding ? [...snap.embedding] : null,
@@ -71,6 +89,8 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
       .onConflictDoUpdate({
         target: jobPostings.id,
         set: {
+          status: snap.status,
+          dedupGroupId: snap.dedupGroupId,
           embeddingStatus: snap.embeddingStatus,
           embeddingModel: snap.embeddingModel,
           embedding: snap.embedding ? [...snap.embedding] : null,
@@ -97,11 +117,18 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
       id: asJobPostingId(row.id),
       userId: asUserId(row.userId),
       sourceConnectorKey: row.sourceConnectorKey,
+      externalId: row.externalId,
       url: row.url,
       urlHash: row.urlHash,
       company: row.company,
       title: row.title,
       descriptionMd: row.descriptionMd,
+      status: row.status,
+      location: row.location as JobPosting['location'],
+      remote: row.remote,
+      salary: row.salary as JobPosting['salary'],
+      postedAt: row.postedAt,
+      dedupGroupId: row.dedupGroupId,
       embeddingStatus: row.embeddingStatus,
       embeddingModel: row.embeddingModel,
       embedding: row.embedding ?? null,

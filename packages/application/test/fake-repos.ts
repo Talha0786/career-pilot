@@ -34,6 +34,12 @@ export class FakeJobPostingRepository implements JobPostingRepository {
   async findByIdAnyOwner(id: JobPostingId): Promise<JobPosting | null> {
     return this.byId.get(id) ?? null;
   }
+  async findBySourceAndExternalId(sourceConnectorKey: string, externalId: string): Promise<JobPosting | null> {
+    for (const job of this.byId.values()) {
+      if (job.sourceConnectorKey === sourceConnectorKey && job.externalId === externalId) return job;
+    }
+    return null;
+  }
   async listForUser(userId: UserId, opts: { cursor?: string; limit: number }) {
     const items = [...this.byId.values()].filter((j) => j.userId === userId).slice(0, opts.limit);
     return { items, nextCursor: null };
