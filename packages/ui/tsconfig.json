@@ -3,10 +3,7 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "ES2023"],
     "jsx": "react-jsx",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "composite": true,
-    "declarationMap": true
+    "rootDir": "./src"
   },
   "include": ["src/**/*"]
 }
