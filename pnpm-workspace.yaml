@@ -8,12 +8,20 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   sharp: true
+  unrs-resolver: true
 
 onlyBuiltDependencies:
   - argon2
   - esbuild
   - msgpackr-extract
   - sharp
+  - unrs-resolver
 
 overrides:
   ioredis: '5.11.1'
+  # Transitive-only vulnerabilities (osv-scanner, task 014): next@15.5.20
+  # bundles its own old postcss internally; drizzle-kit pulls esbuild via
+  # the deprecated @esbuild-kit/* packages. Neither is a direct dependency
+  # we control the version of otherwise.
+  postcss: '>=8.5.10'
+  esbuild: '>=0.25.0'

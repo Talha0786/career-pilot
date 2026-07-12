@@ -10,6 +10,18 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     plugins: { import: importPlugin },
+    settings: {
+      // Every workspace package uses NodeNext-style explicit ".js" import
+      // specifiers that actually resolve to ".ts" source on disk (task 013's
+      // webpack.resolve.extensionAlias note applies here too). Without a
+      // TypeScript-aware resolver, eslint-plugin-import can't resolve these
+      // specifiers at all — and `import/no-relative-packages` silently does
+      // NOT report anything for an import it can't resolve, rather than
+      // erroring loudly. That gap is exactly what let a real cross-boundary
+      // relative import through undetected (found via task 014's own
+      // boundary-check test failing on a clean CI runner).
+      'import/resolver': { typescript: true },
+    },
     rules: {
       // The Clean Architecture dependency rule (M2 design) is already a hard
       // compile error for bare-specifier imports, because pnpm only links a
