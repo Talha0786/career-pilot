@@ -1,0 +1,42 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch: {} # manual trigger for on-demand runs
+
+env:
+  NODE_VERSION: '22'
+  OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+
+jobs:
+  ollama-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama
+        run: |
+          ollama serve &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:11434/api/tags >/dev/null && break
+            sleep 1
+          done
+
+      - name: Pull the embedding model
+        run: ollama pull "${{ env.OLLAMA_EMBEDDING_MODEL }}"
+
+      - name: Run the real-Ollama contract test
+        run: pnpm test:nightly
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Nightly real-Ollama contract test failed — the OpenAiCompatibleLlmAdapter may no longer be compatible with the current Ollama embeddings API shape."

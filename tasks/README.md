@@ -38,7 +38,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [011](011.md) | API: Fastify, auth, jobs, board, WS | M2 | DONE |
 | [012](012.md) | Web: Next.js auth + live board | M2 | DONE |
 | [013](013.md) | Docker Compose stack | M2 | DONE |
-| [014](014.md) | CI pipeline + chaos test | M2 | IN PROGRESS |
+| [014](014.md) | CI pipeline + chaos test | M2 | DONE (branch protection excepted) |
 | [015](015.md) | Atomic budget increment — primitive proven | M2 | DONE |
 | [016](016.md) | Wire budget lock into GuardedLlmPort | M2 | DONE |
 | [017](017.md) | Known limitation: simultaneous embed redelivery race | M2 | DONE |

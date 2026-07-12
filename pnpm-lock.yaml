@@ -48,6 +48,9 @@ importers:
       eslint-plugin-import:
         specifier: ^2.32.0
         version: 2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.4(jiti@2.7.0))
+      globals:
+        specifier: ^17.7.0
+        version: 17.7.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.0
@@ -161,6 +164,34 @@ importers:
       pino:
         specifier: ^9.14.0
         version: 9.14.0
+
+  e2e:
+    dependencies:
+      '@careerpilot/application':
+        specifier: workspace:*
+        version: link:../packages/application
+      '@careerpilot/domain':
+        specifier: workspace:*
+        version: link:../packages/domain
+      '@careerpilot/infrastructure':
+        specifier: workspace:*
+        version: link:../packages/infrastructure
+      drizzle-orm:
+        specifier: ^0.38.4
+        version: 0.38.4(@types/react@19.2.17)(postgres@3.4.9)(react@19.2.7)
+      ioredis:
+        specifier: 5.11.1
+        version: 5.11.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   packages/application:
     dependencies:
@@ -2723,6 +2754,10 @@ packages:
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
+    engines: {node: '>=18'}
+
+  globals@17.7.0:
+    resolution: {integrity: sha512-Czmyns5dUsq4seFBR/Kdydhmo8y9kC79hiSkPn0YcGtNnYWnrgt0vjrSjx9tspoDGWm2CMarffRuLjM4xUz8xg==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -6009,6 +6044,8 @@ snapshots:
       path-scurry: 1.11.1
 
   globals@14.0.0: {}
+
+  globals@17.7.0: {}
 
   globalthis@1.0.4:
     dependencies:

@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
+import globals from 'globals';
 
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/coverage/**', '**/next-env.d.ts'] },
@@ -28,5 +29,13 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },
+  },
+  {
+    // Plain Node scripts (scripts/*.mjs) aren't TypeScript, so they don't get
+    // typescript-eslint's no-undef override — declare the Node runtime
+    // globals explicitly instead of every script tripping `no-undef` on
+    // `process`/`console`/`fetch`.
+    files: ['**/*.mjs'],
+    languageOptions: { globals: globals.node },
   },
 );

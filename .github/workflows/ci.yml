@@ -1,0 +1,216 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ── Static gates — cheap, fail fast before anything spins up a container ──
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  # The Clean Architecture dependency rule (M2 design) is only worth having
+  # documented if CI proves it's still enforced on every change — this is
+  # that proof, not a lint rule taken on faith (see eslint.config.js).
+  boundary-check:
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify:boundaries
+
+  # ── Tests ───────────────────────────────────────────────────────────────
+  unit:
+    runs-on: ubuntu-latest
+    needs: [boundary-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      # Coverage thresholds (domain + application, 90%/90%/85%/90%) live in
+      # vitest.config.ts and fail the process non-zero below the gate — this
+      # step IS the coverage gate, not a separate check.
+      - run: pnpm test:cov
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [unit]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: careerpilot
+          POSTGRES_PASSWORD: careerpilot
+          POSTGRES_DB: careerpilot_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U careerpilot"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://careerpilot:careerpilot@localhost:5432/careerpilot_test
+      TEST_DATABASE_URL: postgresql://careerpilot:careerpilot@localhost:5432/careerpilot_test
+      TEST_REDIS_URL: redis://localhost:6379/2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm test:int
+
+  # Task 014's chaos test: SIGKILL the real worker binary mid-relay and prove
+  # the restarted process finishes the backlog with zero lost/duplicate work.
+  # Kept as its own job (not folded into `integration`) since it spawns real
+  # OS processes and is slower/noisier than the fake-based integration suite.
+  chaos:
+    runs-on: ubuntu-latest
+    needs: [unit]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: careerpilot
+          POSTGRES_PASSWORD: careerpilot
+          POSTGRES_DB: careerpilot_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U careerpilot"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://careerpilot:careerpilot@localhost:5432/careerpilot_test
+      TEST_DATABASE_URL: postgresql://careerpilot:careerpilot@localhost:5432/careerpilot_test
+      TEST_REDIS_URL: redis://localhost:6379/3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm test:e2e
+
+  # ── Build ───────────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    needs: [integration, chaos]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      # apps/web is the one package with a real build step (next build) —
+      # api/worker deliberately run TS directly via tsx in production
+      # (task 013), so `docker compose build` below is what actually proves
+      # their production images still build correctly.
+      - run: pnpm --filter @careerpilot/web build
+        env:
+          API_ORIGIN: http://api:8080
+      - run: docker compose build
+
+  # ── e2e against the real compose stack (task 013/018's own verification
+  # standard, automated) ─────────────────────────────────────────────────
+  e2e-compose:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}' }
+      - name: Prepare .env
+        run: |
+          cp .env.example .env
+          SECRET=$(openssl rand -hex 32)
+          sed -i "s#SESSION_SECRET=.*#SESSION_SECRET=${SECRET}#" .env
+      - run: docker compose up -d --build
+      - name: Run smoke test against the live stack
+        run: node scripts/e2e-compose-smoke.mjs
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  # ── Security — independent of the app-correctness chain above; runs in
+  # parallel so a slow scan never delays the fast-fail static gates ────────
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with: { languages: javascript-typescript }
+      - name: CodeQL analyze
+        uses: github/codeql-action/analyze@v3
+
+      - name: osv-scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --recursive
+            ./
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: '1'
