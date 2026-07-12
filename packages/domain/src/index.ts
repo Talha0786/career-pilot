@@ -6,6 +6,13 @@ export * from './shared/domain-event.js';
 
 // Profile context
 export * from './profile/user.js';
+export * from './profile/profile-section.js';
+export * from './profile/career-profile.js';
+
+// Documents context
+export * from './documents/document-content.js';
+export * from './documents/document-version.js';
+export * from './documents/document.js';
 
 // Discovery context
 export * from './discovery/value-objects.js';
