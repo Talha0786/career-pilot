@@ -43,5 +43,19 @@ Every task file (`NNN.md`) has exactly these sections:
 | [016](016.md) | Wire budget lock into GuardedLlmPort | M2 | DONE |
 | [017](017.md) | Known limitation: simultaneous embed redelivery race | M2 | DONE |
 | [018](018.md) | UI: `@careerpilot/ui` component library + Tailwind restyle | M2 | DONE |
+| [019](019.md) | Domain: CareerProfile, ProfileSection, Document, DocumentVersion | M3 | TODO |
+| [020](020.md) | Contracts + application ports/use-cases: profile & document CRUD | M3 | TODO |
+| [021](021.md) | Drizzle schema + migration 0002: profile & document tables | M3 | TODO |
+| [022](022.md) | API: profile & document routes | M3 | TODO |
+| [023](023.md) | Resume import pipeline (PDF/DOCX → structured profile → confirm) | M3 | TODO |
+| [024](024.md) | Document engine: structured model → PDF/DOCX rendering | M3 | TODO |
+| [025](025.md) | Web UI: profile editor, import confirm flow, document history | M3 | TODO |
+| [026](026.md) | Connector SDK: ConnectorPort, compliance classes, contract test-kit | M4 | TODO |
+| [027](027.md) | Schema: connector_configs, ingestion_runs; extend job_postings | M4 | TODO |
+| [028](028.md) | Class A connectors: Greenhouse, Lever, Ashby, USAJobs, RSS, manual | M4 | TODO |
+| [029](029.md) | Scheduler + ingestion pipeline + dedup | M4 | TODO |
+| [030](030.md) | Class B: capture ingest endpoint | M4 | TODO |
+| [031](031.md) | Class C reference adapter: SerpApi Google Jobs (BYO key) | M4 | TODO |
+| [032](032.md) | Connector health + chaos test | M4 | TODO |
 
-Milestones beyond M2 get tasks when their design is approved — not before. Speculative tasks rot.
+M3 (019-025) and M4 (026-032) run as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. Milestones beyond M4 get tasks when their design is approved — not before. Speculative tasks rot.
