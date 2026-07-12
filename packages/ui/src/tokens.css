@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+
+/*
+ * CareerPilot design tokens — single source of truth for the whole system.
+ * Tailwind v4 turns every one of these into a real utility class
+ * (`--color-primary-600` -> `bg-primary-600`/`text-primary-600`/etc,
+ * `--radius-lg` -> `rounded-lg`, `--font-sans` -> `font-sans`). Consumers
+ * only ever import this file — never redeclare a color or spacing value
+ * locally.
+ */
+@theme {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Primary — indigo. The one brand color; everything else is neutral or semantic. */
+  --color-primary-50: oklch(0.97 0.014 275);
+  --color-primary-100: oklch(0.93 0.032 275);
+  --color-primary-200: oklch(0.87 0.065 275);
+  --color-primary-300: oklch(0.78 0.105 275);
+  --color-primary-400: oklch(0.68 0.15 275);
+  --color-primary-500: oklch(0.58 0.19 275);
+  --color-primary-600: oklch(0.5 0.19 275);
+  --color-primary-700: oklch(0.43 0.17 275);
+  --color-primary-800: oklch(0.36 0.14 275);
+  --color-primary-900: oklch(0.3 0.11 275);
+
+  /* Neutral — slate. Backgrounds, borders, body text. */
+  --color-neutral-0: oklch(1 0 0);
+  --color-neutral-50: oklch(0.985 0.002 260);
+  --color-neutral-100: oklch(0.967 0.003 260);
+  --color-neutral-200: oklch(0.92 0.005 260);
+  --color-neutral-300: oklch(0.85 0.008 260);
+  --color-neutral-400: oklch(0.65 0.012 260);
+  --color-neutral-500: oklch(0.53 0.014 260);
+  --color-neutral-600: oklch(0.44 0.016 260);
+  --color-neutral-700: oklch(0.35 0.016 260);
+  --color-neutral-800: oklch(0.25 0.014 260);
+  --color-neutral-900: oklch(0.16 0.012 260);
+  --color-neutral-950: oklch(0.1 0.01 260);
+
+  /* Semantic */
+  --color-success-50: oklch(0.96 0.03 155);
+  --color-success-500: oklch(0.6 0.14 155);
+  --color-success-600: oklch(0.52 0.14 155);
+  --color-warning-50: oklch(0.97 0.04 85);
+  --color-warning-500: oklch(0.75 0.15 85);
+  --color-warning-600: oklch(0.65 0.15 70);
+  --color-danger-50: oklch(0.96 0.03 25);
+  --color-danger-500: oklch(0.62 0.21 25);
+  --color-danger-600: oklch(0.55 0.21 25);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-xs: 0 1px 2px 0 oklch(0.16 0.012 260 / 0.04);
+  --shadow-sm: 0 1px 3px 0 oklch(0.16 0.012 260 / 0.08), 0 1px 2px -1px oklch(0.16 0.012 260 / 0.06);
+  --shadow-md: 0 4px 8px -2px oklch(0.16 0.012 260 / 0.08), 0 2px 4px -2px oklch(0.16 0.012 260 / 0.06);
+  --shadow-lg: 0 12px 24px -6px oklch(0.16 0.012 260 / 0.12), 0 4px 8px -4px oklch(0.16 0.012 260 / 0.08);
+}
+
+:root {
+  --surface: var(--color-neutral-0);
+  --surface-subtle: var(--color-neutral-50);
+  --border: var(--color-neutral-200);
+  --text: var(--color-neutral-900);
+  --text-muted: var(--color-neutral-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: var(--color-neutral-900);
+    --surface-subtle: var(--color-neutral-800);
+    --border: var(--color-neutral-700);
+    --text: var(--color-neutral-50);
+    --text-muted: var(--color-neutral-400);
+  }
+}

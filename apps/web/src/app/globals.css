@@ -1,0 +1,6 @@
+@import '@careerpilot/ui/tokens.css';
+@source '../../../../packages/ui/src';
+
+body {
+  font-family: var(--font-sans);
+}

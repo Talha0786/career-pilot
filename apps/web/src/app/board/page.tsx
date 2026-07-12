@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { StageSchema, type StageDto, type ApplicationCard, type BoardResponse } from '@careerpilot/contracts';
+import { AppHeader, Card, CardHeader, CardTitle, CardContent, Input, Textarea, Button, Alert, KanbanColumn, KanbanCard } from '@careerpilot/ui';
 import { api, ApiError } from '@/lib/api-client';
 import { useJobEmbeddedSocket } from '@/lib/ws-client';
 
@@ -114,79 +115,83 @@ export default function BoardPage() {
     router.push('/login');
   }
 
-  if (!columns) return <main style={{ padding: 24 }}>Loading…</main>;
+  if (!columns) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-neutral-500">Loading…</div>
+    );
+  }
 
   return (
-    <main style={{ padding: 24 }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ margin: 0 }}>CareerPilot board</h1>
-        <div>
-          <span style={{ marginRight: 12, color: '#555' }}>{email}</span>
-          <button onClick={handleLogout}>Log out</button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-neutral-50">
+      <AppHeader
+        title="CareerPilot board"
+        right={
+          <>
+            <span className="text-sm text-neutral-500">{email}</span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Log out
+            </Button>
+          </>
+        }
+      />
 
-      <section style={{ background: 'white', padding: 16, borderRadius: 8, marginBottom: 24, maxWidth: 560 }}>
-        <h2 style={{ marginTop: 0 }}>Paste a job</h2>
-        <form onSubmit={handlePaste} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input name="title" placeholder="Job title" required style={{ padding: 8 }} />
-          <input name="company" placeholder="Company (optional)" style={{ padding: 8 }} />
-          <textarea name="descriptionMd" placeholder="Paste the job description…" required rows={5} style={{ padding: 8 }} />
-          {formError && <p style={{ color: 'crimson', margin: 0 }}>{formError}</p>}
-          <button type="submit" disabled={submitting} style={{ padding: 10, alignSelf: 'flex-start' }}>
-            {submitting ? 'Adding…' : 'Add to board'}
-          </button>
-        </form>
-      </section>
+      <main className="p-6">
+        <Card className="mb-6 max-w-xl">
+          <CardHeader>
+            <CardTitle>Paste a job</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePaste} className="flex flex-col gap-3">
+              <Input name="title" placeholder="Job title" required />
+              <Input name="company" placeholder="Company (optional)" />
+              <Textarea name="descriptionMd" placeholder="Paste the job description…" required rows={5} />
+              {formError && <Alert variant="danger">{formError}</Alert>}
+              <Button type="submit" disabled={submitting} loading={submitting} className="self-start">
+                {submitting ? 'Adding…' : 'Add to board'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      {boardError && <p style={{ color: 'crimson' }}>{boardError}</p>}
+        {boardError && <Alert variant="danger" className="mb-4 max-w-xl">{boardError}</Alert>}
 
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
-        {STAGES.map((stage) => (
-          <div
-            key={stage}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const data = e.dataTransfer.getData('application/json');
-              if (!data) return;
-              handleDrop(JSON.parse(data) as ApplicationCard, stage);
-            }}
-            style={{ background: '#eee', borderRadius: 8, padding: 10, minWidth: 220, flexShrink: 0 }}
-          >
-            <h3 style={{ margin: '4px 0 10px', fontSize: 14, textTransform: 'uppercase', color: '#555' }}>
-              {STAGE_LABEL[stage]} ({(columns[stage] ?? []).length})
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 40 }}>
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {STAGES.map((stage) => (
+            <KanbanColumn
+              key={stage}
+              title={STAGE_LABEL[stage]}
+              count={(columns[stage] ?? []).length}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const data = e.dataTransfer.getData('application/json');
+                if (!data) return;
+                handleDrop(JSON.parse(data) as ApplicationCard, stage);
+              }}
+            >
               {(columns[stage] ?? []).map((card) => (
-                <div
+                <KanbanCard
                   key={card.applicationId}
+                  title={card.title}
+                  {...(card.company ? { subtitle: card.company } : {})}
+                  statusLabel={statusLabel(card.embeddingStatus)}
+                  statusTone={statusTone(card.embeddingStatus)}
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(card))}
-                  style={{
-                    background: 'white', borderRadius: 6, padding: 10, cursor: 'grab',
-                    borderLeft: `4px solid ${statusColor(card.embeddingStatus)}`,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{card.title}</div>
-                  {card.company && <div style={{ fontSize: 13, color: '#666' }}>{card.company}</div>}
-                  <div style={{ fontSize: 11, marginTop: 6, color: statusColor(card.embeddingStatus) }}>
-                    {statusLabel(card.embeddingStatus)}
-                  </div>
-                </div>
+                />
               ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </main>
+            </KanbanColumn>
+          ))}
+        </div>
+      </main>
+    </div>
   );
 }
 
-function statusColor(status: ApplicationCard['embeddingStatus']): string {
-  if (status === 'ready') return '#2e7d32';
-  if (status === 'failed') return '#c62828';
-  return '#f9a825';
+function statusTone(status: ApplicationCard['embeddingStatus']): 'pending' | 'ready' | 'failed' {
+  if (status === 'ready') return 'ready';
+  if (status === 'failed') return 'failed';
+  return 'pending';
 }
 
 function statusLabel(status: ApplicationCard['embeddingStatus']): string {
