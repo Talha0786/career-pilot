@@ -25,3 +25,8 @@ overrides:
   # we control the version of otherwise.
   postcss: '>=8.5.10'
   esbuild: '>=0.25.0'
+  # vite 5.4.21 (pulled in transitively by vitest@3.2.7) has 3 known CVEs
+  # (GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff, GHSA-v6wh-96g9-6wx3), fixed
+  # in 6.4.3. vitest@3.2.7 only accepts vite ^5 || ^6 || ^7 — capped below
+  # 8.x since an unbounded floor let it drift to an unsupported major.
+  vite: '>=6.4.3 <7.0.0'
