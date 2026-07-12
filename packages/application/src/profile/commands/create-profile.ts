@@ -3,7 +3,7 @@ import type { UnitOfWork, Actor } from '../../ports/repositories.js';
 
 export interface CreateProfileInput {
   title: string;
-  summary?: string | undefined;
+  summary?: string | null | undefined;
 }
 export interface CreateProfileOutput {
   profileId: string;

@@ -29,7 +29,7 @@ export interface ExperienceContent {
   readonly organization: string;
   readonly startDate: string; // ISO yyyy-mm or yyyy-mm-dd
   readonly endDate: string | null; // null = current
-  readonly location?: string;
+  readonly location?: string | undefined;
   readonly bullets: readonly string[];
 }
 export interface EducationContent {
@@ -38,13 +38,13 @@ export interface EducationContent {
   readonly credential: string;
   readonly startDate: string;
   readonly endDate: string | null;
-  readonly details?: readonly string[];
+  readonly details?: readonly string[] | undefined;
 }
 export interface ProjectContent {
   readonly schemaVersion: 1;
   readonly name: string;
   readonly description: string;
-  readonly url?: string;
+  readonly url?: string | undefined;
   readonly bullets: readonly string[];
 }
 export interface SkillGroupContent {
@@ -56,7 +56,7 @@ export interface CertificationContent {
   readonly schemaVersion: 1;
   readonly name: string;
   readonly issuer: string;
-  readonly issuedDate?: string;
+  readonly issuedDate?: string | undefined;
 }
 export interface SummaryContent {
   readonly schemaVersion: 1;

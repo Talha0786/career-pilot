@@ -7,6 +7,8 @@ import {
   DrizzleUserRepository,
   DrizzleJobPostingRepository,
   DrizzleApplicationRepository,
+  DrizzleProfileRepository,
+  DrizzleDocumentRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
   PostgresBudgetStore,
@@ -33,6 +35,8 @@ async function main(): Promise<void> {
   const users = new DrizzleUserRepository(db);
   const jobPostings = new DrizzleJobPostingRepository(db);
   const applications = new DrizzleApplicationRepository(db);
+  const profiles = new DrizzleProfileRepository(db);
+  const documents = new DrizzleDocumentRepository(db);
   const hasher = new Argon2Hasher();
   const budgetStore = new PostgresBudgetStore(db);
   const outboxRelay = new OutboxRelay(db, new BullMqOutboxPublisher(redis));
@@ -45,6 +49,8 @@ async function main(): Promise<void> {
     users,
     jobPostings,
     applications,
+    profiles,
+    documents,
     hasher,
     outboxRelay,
     jobQueue,

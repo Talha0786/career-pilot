@@ -46,7 +46,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [019](019.md) | Domain: CareerProfile, ProfileSection, Document, DocumentVersion | M3 | DONE |
 | [020](020.md) | Contracts + application ports/use-cases: profile & document CRUD | M3 | DONE |
 | [021](021.md) | Drizzle schema + migration 0002: profile & document tables | M3 | DONE |
-| [022](022.md) | API: profile & document routes | M3 | TODO |
+| [022](022.md) | API: profile & document routes | M3 | DONE |
 | [023](023.md) | Resume import pipeline (PDF/DOCX → structured profile → confirm) | M3 | TODO |
 | [024](024.md) | Document engine: structured model → PDF/DOCX rendering | M3 | TODO |
 | [025](025.md) | Web UI: profile editor, import confirm flow, document history | M3 | TODO |

@@ -9,6 +9,8 @@ import type {
   UserRepository,
   JobPostingRepository,
   ApplicationRepository,
+  ProfileRepository,
+  DocumentRepository,
   HasherPort,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
@@ -22,6 +24,8 @@ import { registerBoardRoutes } from './routes/board.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerWsRoutes } from './routes/ws.js';
+import { registerProfileRoutes } from './routes/profile.js';
+import { registerDocumentRoutes } from './routes/documents.js';
 import { ConnectionHub } from './ws/hub.js';
 
 declare module 'fastify' {
@@ -37,6 +41,8 @@ export interface AppDeps {
   users: UserRepository;
   jobPostings: JobPostingRepository;
   applications: ApplicationRepository;
+  profiles: ProfileRepository;
+  documents: DocumentRepository;
   hasher: HasherPort;
   outboxRelay: OutboxRelay;
   jobQueue: Queue;
@@ -72,6 +78,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerJobRoutes(app, { uow: deps.uow, jobPostings: deps.jobPostings });
   registerApplicationRoutes(app, { uow: deps.uow });
   registerBoardRoutes(app, { applications: deps.applications, jobPostings: deps.jobPostings });
+  registerProfileRoutes(app, { uow: deps.uow, profiles: deps.profiles });
+  registerDocumentRoutes(app, { uow: deps.uow, documents: deps.documents, profiles: deps.profiles });
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
   registerWsRoutes(app, { hub });
 

@@ -23,9 +23,9 @@ export interface ResumeDocumentContent {
   readonly contact: {
     readonly name: string;
     readonly email: string;
-    readonly phone?: string;
-    readonly location?: string;
-    readonly links?: readonly string[];
+    readonly phone?: string | undefined;
+    readonly location?: string | undefined;
+    readonly links?: readonly string[] | undefined;
   };
   readonly summary: string | null;
   readonly sections: readonly ResumeSection[];
@@ -37,7 +37,7 @@ export interface CoverLetterDocumentContent {
   readonly contact: {
     readonly name: string;
     readonly email: string;
-    readonly phone?: string;
+    readonly phone?: string | undefined;
   };
   readonly recipient: string | null;
   readonly salutation: string;

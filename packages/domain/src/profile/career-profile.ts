@@ -100,9 +100,9 @@ export class CareerProfile extends AggregateRoot {
   static create(args: {
     userId: UserId;
     title: string;
-    summary?: string | undefined;
-    isActive?: boolean;
-    now?: Date;
+    summary?: string | null | undefined;
+    isActive?: boolean | undefined;
+    now?: Date | undefined;
   }): Result<CareerProfile, DomainError> {
     const title = args.title.trim();
     if (title.length === 0) {
