@@ -1,8 +1,13 @@
-import type { User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
+import type {
+  User, JobPosting, Application, CareerProfile, Document,
+  UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId,
+} from '@careerpilot/domain';
 import type {
   UserRepository, JobPostingRepository, ApplicationRepository,
+  ProfileRepository, DocumentRepository,
   OutboxPort, UnitOfWork, TransactionContext, HasherPort,
 } from '../src/ports/repositories.js';
+import type { AuditPort, AuditRecord } from '../src/ports/audit.port.js';
 
 /**
  * In-memory fakes for pure application-layer unit tests (task 005 acceptance:
@@ -58,6 +63,46 @@ export class FakeApplicationRepository implements ApplicationRepository {
   }
 }
 
+export class FakeProfileRepository implements ProfileRepository {
+  private byId = new Map<string, CareerProfile>();
+
+  async findByIdForUser(id: CareerProfileId, userId: UserId): Promise<CareerProfile | null> {
+    const profile = this.byId.get(id);
+    return profile && profile.userId === userId ? profile : null;
+  }
+  async findActiveForUser(userId: UserId): Promise<CareerProfile | null> {
+    for (const p of this.byId.values()) if (p.userId === userId && p.isActive) return p;
+    return null;
+  }
+  async save(profile: CareerProfile): Promise<void> {
+    this.byId.set(profile.id, profile);
+  }
+}
+
+export class FakeDocumentRepository implements DocumentRepository {
+  private byId = new Map<string, Document>();
+
+  async findByIdForUser(id: DocumentId, userId: UserId): Promise<Document | null> {
+    const doc = this.byId.get(id);
+    return doc && doc.userId === userId ? doc : null;
+  }
+  async listForUser(userId: UserId, opts?: { includeDeleted?: boolean }): Promise<Document[]> {
+    return [...this.byId.values()].filter(
+      (d) => d.userId === userId && (opts?.includeDeleted === true || !d.isDeleted),
+    );
+  }
+  async save(document: Document): Promise<void> {
+    this.byId.set(document.id, document);
+  }
+}
+
+export class FakeAuditPort implements AuditPort {
+  public records: AuditRecord[] = [];
+  async record(entry: AuditRecord): Promise<void> {
+    this.records.push(entry);
+  }
+}
+
 export class FakeOutboxPort implements OutboxPort {
   public enqueued: { eventType: string; aggregateType: string; aggregateId: string; payload: unknown }[] = [];
   async enqueue(events: readonly { eventType: string; aggregateType: string; aggregateId: string; payload: unknown }[]) {
@@ -72,6 +117,9 @@ export class FakeUnitOfWork implements UnitOfWork {
     public jobPostings: FakeJobPostingRepository = new FakeJobPostingRepository(),
     public applications: FakeApplicationRepository = new FakeApplicationRepository(),
     public outbox: FakeOutboxPort = new FakeOutboxPort(),
+    public profiles: FakeProfileRepository = new FakeProfileRepository(),
+    public documents: FakeDocumentRepository = new FakeDocumentRepository(),
+    public audit: FakeAuditPort = new FakeAuditPort(),
   ) {}
 
   async withTransaction<T>(fn: (ctx: TransactionContext) => Promise<T>): Promise<T> {
@@ -79,7 +127,10 @@ export class FakeUnitOfWork implements UnitOfWork {
       users: this.users,
       jobPostings: this.jobPostings,
       applications: this.applications,
+      profiles: this.profiles,
+      documents: this.documents,
       outbox: this.outbox,
+      audit: this.audit,
     });
   }
 }

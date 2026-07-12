@@ -140,7 +140,7 @@ export class CareerProfile extends AggregateRoot {
   addSection(args: {
     kind: ProfileSectionKind;
     content: ProfileSectionContent;
-    sort?: number;
+    sort?: number | undefined;
   }): Result<ProfileSection, DomainError> {
     const sort = args.sort ?? this._sections.length;
     const created = ProfileSection.create({
@@ -198,7 +198,10 @@ export class CareerProfile extends AggregateRoot {
     return ok(undefined);
   }
 
-  updateDetails(args: { title?: string; summary?: string | null }): Result<void, DomainError> {
+  updateDetails(args: {
+    title?: string | undefined;
+    summary?: string | null | undefined;
+  }): Result<void, DomainError> {
     if (args.title !== undefined) {
       const title = args.title.trim();
       if (title.length === 0) return err(validationFailed('Title is required', { title: 'required' }));

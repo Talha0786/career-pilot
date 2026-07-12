@@ -1,4 +1,8 @@
-import type { User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
+import type {
+  User, JobPosting, Application, CareerProfile, Document,
+  UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId,
+} from '@careerpilot/domain';
+import type { AuditPort } from './audit.port.js';
 
 export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
@@ -31,6 +35,27 @@ export interface ApplicationRepository {
   save(app: Application): Promise<void>;
 }
 
+/**
+ * M3 treats "career profile" as a per-user singleton in the API surface
+ * (`GET/PUT /api/profile`, no profile id in the URL — task 022) even though
+ * the schema allows multiple rows per user (design §2 `is_active` flag).
+ * `findActiveForUser` is the lookup the singleton routes use;
+ * `findByIdForUser` stays available for anything that already has an id
+ * (e.g. a future multi-profile UI) without requiring a schema change.
+ */
+export interface ProfileRepository {
+  findByIdForUser(id: CareerProfileId, userId: UserId): Promise<CareerProfile | null>;
+  findActiveForUser(userId: UserId): Promise<CareerProfile | null>;
+  save(profile: CareerProfile): Promise<void>;
+}
+
+export interface DocumentRepository {
+  findByIdForUser(id: DocumentId, userId: UserId): Promise<Document | null>;
+  /** Excludes soft-deleted documents unless `includeDeleted` is set. */
+  listForUser(userId: UserId, opts?: { includeDeleted?: boolean }): Promise<Document[]>;
+  save(document: Document): Promise<void>;
+}
+
 /** Emitted by aggregates, drained by repositories, written to the outbox (ADR-007). */
 export interface OutboxPort {
   enqueue(events: readonly { eventType: string; aggregateType: string; aggregateId: string; payload: unknown }[]): Promise<void>;
@@ -48,7 +73,10 @@ export interface TransactionContext {
   readonly users: UserRepository;
   readonly jobPostings: JobPostingRepository;
   readonly applications: ApplicationRepository;
+  readonly profiles: ProfileRepository;
+  readonly documents: DocumentRepository;
   readonly outbox: OutboxPort;
+  readonly audit: AuditPort;
 }
 
 export interface ClockPort {
