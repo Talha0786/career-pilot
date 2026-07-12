@@ -173,6 +173,26 @@ describe('computeProfileFactsHash — determinism', () => {
     expect(computeProfileFactsHash([a, b])).toBe(computeProfileFactsHash([b, a]));
   });
 
+  it('is independent of object key order within content (Postgres jsonb does not preserve insertion order)', () => {
+    // The exact bug caught by the task 021 integration test: a section
+    // round-tripped through Postgres jsonb can come back with the same
+    // fields in a different key order. The hash must not change.
+    const a = { id: 'a', kind: 'experience' as const, content: validExperience() };
+    const reordered = {
+      id: 'a',
+      kind: 'experience' as const,
+      content: {
+        bullets: validExperience().bullets,
+        endDate: validExperience().endDate,
+        startDate: validExperience().startDate,
+        organization: validExperience().organization,
+        title: validExperience().title,
+        schemaVersion: validExperience().schemaVersion,
+      },
+    };
+    expect(computeProfileFactsHash([a])).toBe(computeProfileFactsHash([reordered]));
+  });
+
   it('changes when content changes', () => {
     const a = { id: 'a', kind: 'experience' as const, content: validExperience() };
     const changed = { id: 'a', kind: 'experience' as const, content: { ...validExperience(), title: 'Different' } };

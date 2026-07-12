@@ -45,7 +45,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [018](018.md) | UI: `@careerpilot/ui` component library + Tailwind restyle | M2 | DONE |
 | [019](019.md) | Domain: CareerProfile, ProfileSection, Document, DocumentVersion | M3 | DONE |
 | [020](020.md) | Contracts + application ports/use-cases: profile & document CRUD | M3 | DONE |
-| [021](021.md) | Drizzle schema + migration 0002: profile & document tables | M3 | TODO |
+| [021](021.md) | Drizzle schema + migration 0002: profile & document tables | M3 | DONE |
 | [022](022.md) | API: profile & document routes | M3 | TODO |
 | [023](023.md) | Resume import pipeline (PDF/DOCX → structured profile → confirm) | M3 | TODO |
 | [024](024.md) | Document engine: structured model → PDF/DOCX rendering | M3 | TODO |

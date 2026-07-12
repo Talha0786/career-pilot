@@ -28,6 +28,29 @@ export interface CareerProfileSnapshot {
 }
 
 /**
+ * Object-key-order-independent JSON serialization. Plain `JSON.stringify`
+ * preserves insertion order, but Postgres `jsonb` does NOT — it re-encodes
+ * object keys into its own internal order, so a section's `content` that
+ * round-trips through the DB can come back with the same fields in a
+ * different order. Hashing with `JSON.stringify` alone would then produce a
+ * DIFFERENT hash for semantically identical content post-persistence,
+ * silently breaking staleness detection. Sorting keys at every level makes
+ * the hash stable across that round-trip (found by the task 021 integration
+ * test — `profile.factsHash` computed pre-save didn't match the same
+ * profile re-read from Postgres).
+ */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
  * Deterministic hash of the profile's canonical facts (design §2:
  * `career_profiles.facts_hash`). Reused verbatim by `DocumentVersion` at
  * generation time (`profile_facts_hash`) so the UI can flag a document
@@ -43,7 +66,7 @@ export function computeProfileFactsHash(
   const canonical = [...sections]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((s) => ({ kind: s.kind, content: s.content }));
-  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
+  return createHash('sha256').update(stableStringify(canonical)).digest('hex');
 }
 
 /**

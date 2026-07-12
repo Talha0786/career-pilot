@@ -5,6 +5,9 @@ import { outbox } from '../schema/index.js';
 import { DrizzleUserRepository } from './user.repository.js';
 import { DrizzleJobPostingRepository } from './job-posting.repository.js';
 import { DrizzleApplicationRepository } from './application.repository.js';
+import { DrizzleProfileRepository } from './profile.repository.js';
+import { DrizzleDocumentRepository } from './document.repository.js';
+import { DrizzleAuditPort } from './audit.repository.js';
 
 export class DrizzleOutboxPort implements OutboxPort {
   constructor(private readonly db: Db) {}
@@ -40,7 +43,10 @@ export class DrizzleUnitOfWork implements UnitOfWork {
         users: new DrizzleUserRepository(tx as unknown as Db),
         jobPostings: new DrizzleJobPostingRepository(tx as unknown as Db),
         applications: new DrizzleApplicationRepository(tx as unknown as Db),
+        profiles: new DrizzleProfileRepository(tx as unknown as Db),
+        documents: new DrizzleDocumentRepository(tx as unknown as Db),
         outbox: new DrizzleOutboxPort(tx as unknown as Db),
+        audit: new DrizzleAuditPort(tx as unknown as Db),
       };
       return fn(ctx);
     });
