@@ -1,0 +1,25 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "05e14247-17c4-4e98-9a13-53828a4e2f13",
+      "title": "Outbound Business Development Representative, AMER",
+      "location": "New York, New York",
+      "jobUrl": "https://jobs.ashbyhq.com/notion/05e14247-17c4-4e98-9a13-53828a4e2f13",
+      "publishedAt": "2026-04-02T21:00:55.755+00:00",
+      "isRemote": true,
+      "descriptionHtml": "<h1>Who We Are</h1><p style=\"min-height:1.5em\">Notion is the collaborative AI workspace where teams and agents <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://www.youtube.com/watch?v=vkpYpWfEK5s\">think together</a>. We're building",
+      "descriptionPlain": "WHO WE ARE\n\nNotion is the collaborative AI workspace where teams and agents think together https://www.youtube.com/watch?v=vkpYpWfEK5s. We're building one place where your knowledge, projects, meetings, and AI tools live side by side, so work is fast"
+    },
+    {
+      "id": "6ad34426-b980-436b-80c4-3634c00094ad",
+      "title": "Solutions Engineer, EMEA",
+      "location": "Dublin, Ireland",
+      "jobUrl": "https://jobs.ashbyhq.com/notion/6ad34426-b980-436b-80c4-3634c00094ad",
+      "publishedAt": "2025-09-04T10:01:06.598+00:00",
+      "isRemote": null,
+      "descriptionHtml": "<h1>Who We Are</h1><p style=\"min-height:1.5em\">Notion is the collaborative AI workspace where teams and agents <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://www.youtube.com/watch?v=vkpYpWfEK5s\">think together</a>. We're building",
+      "descriptionPlain": "WHO WE ARE\n\nNotion is the collaborative AI workspace where teams and agents think together https://www.youtube.com/watch?v=vkpYpWfEK5s. We're building one place where your knowledge, projects, meetings, and AI tools live side by side, so work is fast"
+    }
+  ]
+}

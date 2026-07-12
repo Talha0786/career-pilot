@@ -1,0 +1,38 @@
+{
+  "SearchResult": {
+    "SearchResultCount": 2,
+    "SearchResultCountAll": 2,
+    "SearchResultItems": [
+      {
+        "MatchedObjectId": "780000001",
+        "MatchedObjectDescriptor": {
+          "PositionID": "AB-12345-01",
+          "PositionTitle": "IT Specialist (Infrastructure)",
+          "PositionURI": "https://www.usajobs.gov/job/780000001",
+          "OrganizationName": "Department of Example",
+          "PositionLocationDisplay": "Washington, DC",
+          "PositionRemuneration": [
+            { "MinimumRange": "95000.00", "MaximumRange": "125000.00", "RateIntervalCode": "Per Year" }
+          ],
+          "PublicationStartDate": "2026-06-01",
+          "UserArea": { "Details": { "JobSummary": "Support federal infrastructure systems." } }
+        }
+      },
+      {
+        "MatchedObjectId": "780000002",
+        "MatchedObjectDescriptor": {
+          "PositionID": "AB-12345-02",
+          "PositionTitle": "Data Scientist — Remote",
+          "PositionURI": "https://www.usajobs.gov/job/780000002",
+          "OrganizationName": "Department of Example",
+          "PositionLocationDisplay": "Remote",
+          "PositionRemuneration": [
+            { "MinimumRange": "110000.00", "MaximumRange": "150000.00", "RateIntervalCode": "Per Year" }
+          ],
+          "PublicationStartDate": "2026-06-05",
+          "UserArea": { "Details": { "JobSummary": "Analyze federal program data." } }
+        }
+      }
+    ]
+  }
+}

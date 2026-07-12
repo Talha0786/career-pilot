@@ -1,0 +1,24 @@
+{
+  "jobs": [
+    {
+      "id": 7954688,
+      "title": "Account Executive, AI Sales (Grower)",
+      "updated_at": "2026-06-26T17:05:44-04:00",
+      "location": { "name": "San Francisco, CA" },
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=7954688",
+      "content": "&lt;h2&gt;Who we are&lt;/h2&gt;\n&lt;h3&gt;About Stripe&lt;/h3&gt;\n&lt;p&gt;Stripe is a financial infrastructure platform for businesses. Millions of companies - from the world’s largest enterprises to the most ambitious startups - use Stripe to accept payments, grow their revenue, and accelerate new business opportunities. Our mission is to increase the GDP of the internet, and we have a staggerin",
+      "departments": [{ "id": 295360, "name": "1650 AI GTM Strategy & Solutions" }],
+      "offices": [{ "id": 1, "name": "US" }]
+    },
+    {
+      "id": 8042978,
+      "title": "Account Executive, Commercial Grower (Japanese Fluency)",
+      "updated_at": "2026-07-02T21:13:43-04:00",
+      "location": { "name": "Japan" },
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8042978",
+      "content": "&lt;h2&gt;&lt;strong&gt;Who we are&lt;/strong&gt;&lt;/h2&gt;\n&lt;h3&gt;&lt;strong&gt;About Stripe&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;Stripe is a financial infrastructure platform for businesses. Millions of companies from the world’s largest enterprises to the most ambitious startups use Stripe to accept payments, grow their revenue, and accelerate new business opportunities. Our mission is to inc",
+      "departments": [{ "id": 81432, "name": "1195 Account Executives (APAC)" }],
+      "offices": [{ "id": 1, "name": "Japan Locations" }]
+    }
+  ]
+}
