@@ -1,4 +1,4 @@
-import { eq, and, lt, desc } from 'drizzle-orm';
+import { eq, and, lt, desc, sql } from 'drizzle-orm';
 import { JobPosting, asUserId, asJobPostingId } from '@careerpilot/domain';
 import type { JobPostingRepository } from '@careerpilot/application';
 import type { Db } from '../client.js';
@@ -76,6 +76,20 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
           embedding: snap.embedding ? [...snap.embedding] : null,
         },
       });
+  }
+
+  /**
+   * Same pattern as PostgresBudgetStore.withUserBudgetLock (task 016), keyed
+   * on jobPostingId instead of userId — makes the worker's read-check-embed-
+   * write sequence atomic across concurrent redeliveries of the same event
+   * (task 017), instead of merely "correct at rest" via attachEmbedding's
+   * per-model idempotency.
+   */
+  async withJobPostingLock<T>(jobPostingId: string, fn: () => Promise<T>): Promise<T> {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${jobPostingId}))`);
+      return fn();
+    });
   }
 
   private toDomain(row: typeof jobPostings.$inferSelect): JobPosting {

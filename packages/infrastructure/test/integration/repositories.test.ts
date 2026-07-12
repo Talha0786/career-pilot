@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { withTestDb, resetTestDb } from './setup.js';
 import { DrizzleUserRepository } from '../../src/db/repositories/user.repository.js';
 import { DrizzleJobPostingRepository } from '../../src/db/repositories/job-posting.repository.js';
 import { DrizzleApplicationRepository } from '../../src/db/repositories/application.repository.js';
 import { DrizzleUnitOfWork } from '../../src/db/repositories/outbox.repository.js';
-import { schema } from '../../src/db/client.js';
-import { User, Email, PasswordHash, JobPosting, Application, asUserId, isOk } from '@careerpilot/domain';
+import { User, Email, PasswordHash, JobPosting, Application, isOk } from '@careerpilot/domain';
 import { sql } from 'drizzle-orm';
 
 const email = (s: string) => {

@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { cn } from '../lib/cn.js';
 
-export interface CheckboxProps extends CheckboxPrimitive.CheckboxProps {}
+export type CheckboxProps = CheckboxPrimitive.CheckboxProps;
 
 function CheckIcon() {
   return (

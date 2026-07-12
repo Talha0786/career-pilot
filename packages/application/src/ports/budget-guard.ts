@@ -1,6 +1,6 @@
 import type { LlmPort, EmbedRequest, EmbedResponse, LlmError, AiInvocationRecord } from './llm.port.js';
-import type { Result } from '@careerpilot/domain';
-import { ok, err, budgetExceeded, type DomainError } from '@careerpilot/domain';
+import type { Result, DomainError } from '@careerpilot/domain';
+import { err, budgetExceeded } from '@careerpilot/domain';
 
 /**
  * Wraps ANY LlmPort so every call is budget-checked before dispatch and

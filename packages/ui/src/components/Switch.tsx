@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import { cn } from '../lib/cn.js';
 
-export interface SwitchProps extends SwitchPrimitive.SwitchProps {}
+export type SwitchProps = SwitchPrimitive.SwitchProps;
 
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(({ className, ...props }, ref) => (
   <SwitchPrimitive.Root

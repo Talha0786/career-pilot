@@ -6,7 +6,7 @@ import { OutboxRelay, BullMqOutboxPublisher, DrizzleUnitOfWork, DrizzleJobPostin
 import { GuardedLlmPort } from '@careerpilot/application';
 import { makeCreateManualJobUseCase } from '@careerpilot/application';
 import { createJobPostedWorker } from '../../src/handlers/job-posted.handler.js';
-import { asUserId, asJobPostingId, isOk, User, Email, PasswordHash } from '@careerpilot/domain';
+import { asJobPostingId, isOk, User, Email, PasswordHash } from '@careerpilot/domain';
 import pino from 'pino';
 import { sql } from 'drizzle-orm';
 
@@ -205,11 +205,74 @@ describe('End-to-end: paste job → outbox → relay → BullMQ → worker → e
     }
   }, 15_000);
 
-  it.todo(
-    'KNOWN LIMITATION: truly SIMULTANEOUS redelivery (both deliveries read "pending" before either writes "ready") can still ' +
-    'call the LLM twice — final DB state stays correct (attachEmbedding is idempotent per-model, task 003), but cost dedup is ' +
-    'only guaranteed for sequential redelivery, not a genuine race. Same class of gap as task 015/016 (read-then-write without ' +
-    'a lock); closing it fully would mean an advisory lock keyed on jobPostingId around the read-check-embed-write sequence. ' +
-    'Documented rather than silently assumed away — not fixed in M2.',
-  );
+  it('SIMULTANEOUS redelivery (task 017): two deliveries enqueued back-to-back with no wait between them still result in exactly ONE LLM call', async () => {
+    const user = User.register({
+      email: (() => { const r = Email.create('simultaneous@test.com'); if (!isOk(r)) throw new Error('x'); return r.value; })(),
+      passwordHash: (() => { const r = PasswordHash.fromHashed('$argon2id$v=19$m=65536,t=3,p=4$x$y'); if (!isOk(r)) throw new Error('x'); return r.value; })(),
+    });
+    await db.execute(sql`INSERT INTO users (id, email, password_hash) VALUES (${user.id}, ${user.email.value}, ${user.passwordHash.value})`);
+
+    const uow = new DrizzleUnitOfWork(db);
+    const jobPostings = new DrizzleJobPostingRepository(db);
+    const createManualJob = makeCreateManualJobUseCase({ uow });
+
+    const created = await createManualJob({ userId: user.id }, { title: 'T', descriptionMd: 'D' });
+    if (!isOk(created)) throw new Error('setup failed');
+
+    const queue = new Queue('discovery.job_posted', { connection: redis });
+    let callCount = 0;
+    const countingLlm: import('@careerpilot/application').LlmPort = {
+      embed: async (req) => {
+        callCount += 1;
+        // Widens the race window: without the task 017 lock, this gives the
+        // second delivery ample time to also read embeddingStatus='pending'
+        // before the first delivery writes 'ready'. WITH the lock, the
+        // second delivery simply blocks on pg_advisory_xact_lock for the
+        // duration of this delay instead — so the assertion below is
+        // deterministic either way, not a coin-flip on scheduler timing.
+        await new Promise((r) => setTimeout(r, 200));
+        return { ok: true, value: { vector: Array.from({ length: 768 }, () => 0.1), model: req.model, promptTokens: 5 } };
+      },
+    };
+    const { PostgresBudgetStore } = await import('@careerpilot/infrastructure');
+    const guardedLlm = new GuardedLlmPort(countingLlm, new PostgresBudgetStore(db), { estimateEmbedCostUsd: () => 0, actualEmbedCostUsd: () => 0 }, 100, 'test');
+
+    // concurrency: 4 (hardcoded in createJobPostedWorker) — both deliveries
+    // below are eligible to be picked up by the worker in parallel, unlike
+    // the sequential-redelivery test above which waits for completion first.
+    const worker = createJobPostedWorker({
+      connection: redis, jobPostings, llm: guardedLlm, embeddingModel: 'nomic-embed-text',
+      logger: pino({ level: 'silent' }),
+    });
+
+    try {
+      const payload = { jobPostingId: created.value.jobId, userId: user.id };
+
+      // Both enqueued with NO wait between them — genuinely concurrent
+      // delivery, not "first completes, then second arrives" (that's the
+      // sequential test above). This is the actual race task 017 closes.
+      await queue.add('discovery.job_posted', payload, { jobId: 'simultaneous-delivery-1' });
+      await queue.add('discovery.job_posted', payload, { jobId: 'simultaneous-delivery-2' });
+
+      const deadline = Date.now() + 10_000;
+      while (Date.now() < deadline) {
+        const row = await db.execute(sql`SELECT embedding_status FROM job_postings WHERE id = ${created.value.jobId}`);
+        if ((row as unknown as { embedding_status: string }[])[0]?.embedding_status === 'ready') break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      // Give the loser of the lock race every chance to (wrongly) still call
+      // the LLM after the winner's transaction commits.
+      await new Promise((r) => setTimeout(r, 500));
+
+      expect(callCount).toBe(1); // THE guarantee task 017 adds — not "eventually 1 or 2", exactly 1.
+      const invocations = await db.execute(sql`SELECT count(*)::int AS n FROM ai_invocations WHERE user_id = ${user.id}`);
+      expect((invocations as unknown as { n: number }[])[0]!.n).toBe(1);
+
+      const final = await db.execute(sql`SELECT embedding_status FROM job_postings WHERE id = ${created.value.jobId}`);
+      expect((final as unknown as { embedding_status: string }[])[0]!.embedding_status).toBe('ready');
+    } finally {
+      await worker.close();
+      await queue.close();
+    }
+  }, 15_000);
 });

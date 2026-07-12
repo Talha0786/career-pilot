@@ -1,4 +1,4 @@
-import type { Result, DomainError, User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
+import type { User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
 
 export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
@@ -15,6 +15,14 @@ export interface JobPostingRepository {
     nextCursor: string | null;
   }>;
   save(job: JobPosting): Promise<void>;
+  /**
+   * Serializes the read-check-embed-write sequence for one job posting
+   * (task 017 — closes the last read-then-write race in this class, after
+   * 015/016 closed the same shape for budget spend). Optional so a
+   * repository that doesn't support locking still satisfies the interface —
+   * the use case just runs unlocked, same as before.
+   */
+  withJobPostingLock?<T>(jobPostingId: string, fn: () => Promise<T>): Promise<T>;
 }
 
 export interface ApplicationRepository {

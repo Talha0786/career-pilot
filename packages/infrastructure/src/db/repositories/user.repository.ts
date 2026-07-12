@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { User, Email, PasswordHash, asUserId } from '@careerpilot/domain';
+import { User, asUserId } from '@careerpilot/domain';
 import type { UserRepository } from '@careerpilot/application';
 import type { Db } from '../client.js';
 import { users } from '../schema/index.js';

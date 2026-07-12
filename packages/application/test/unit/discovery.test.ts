@@ -7,7 +7,6 @@ import { GuardedLlmPort } from '../../src/ports/budget-guard.js';
 import { asUserId, isOk, isErr } from '@careerpilot/domain';
 
 const USER = asUserId('018f0000-0000-7000-8000-000000000001');
-const OTHER = asUserId('018f0000-0000-7000-8000-000000000002');
 
 describe('createManualJob', () => {
   it('persists the job AND its outbox event atomically', async () => {

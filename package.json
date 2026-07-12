@@ -1,6 +1,7 @@
 {
   "name": "careerpilot",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": ">=22"

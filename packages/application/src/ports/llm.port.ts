@@ -1,4 +1,4 @@
-import type { Result, DomainError } from '@careerpilot/domain';
+import type { Result } from '@careerpilot/domain';
 
 /**
  * Provider-agnostic LLM boundary (ADR-006). Adapters: OpenAI-compatible

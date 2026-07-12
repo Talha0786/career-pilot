@@ -1,5 +1,4 @@
 import { createDb, type Db } from '../../src/db/client.js';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
