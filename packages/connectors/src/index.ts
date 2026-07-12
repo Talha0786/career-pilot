@@ -21,3 +21,4 @@ export type {
   ConnectorErrorCode,
 } from '@careerpilot/application';
 export * from './class-a/index.js';
+export * from './class-b/index.js';

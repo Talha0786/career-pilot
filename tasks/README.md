@@ -54,7 +54,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [027](027.md) | Schema: connector_configs, ingestion_runs; extend job_postings | M4 | DONE |
 | [028](028.md) | Class A connectors: Greenhouse, Lever, Ashby, USAJobs, RSS, manual | M4 | DONE |
 | [029](029.md) | Scheduler + ingestion pipeline + dedup | M4 | DONE |
-| [030](030.md) | Class B: capture ingest endpoint | M4 | TODO |
+| [030](030.md) | Class B: capture ingest endpoint | M4 | DONE |
 | [031](031.md) | Class C reference adapter: SerpApi Google Jobs (BYO key) | M4 | TODO |
 | [032](032.md) | Connector health + chaos test | M4 | TODO |
 

@@ -21,6 +21,7 @@ import { registerApplicationRoutes } from './routes/applications.js';
 import { registerBoardRoutes } from './routes/board.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerCaptureRoutes } from './routes/capture.js';
 import { registerWsRoutes } from './routes/ws.js';
 import { ConnectionHub } from './ws/hub.js';
 
@@ -73,6 +74,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerApplicationRoutes(app, { uow: deps.uow });
   registerBoardRoutes(app, { applications: deps.applications, jobPostings: deps.jobPostings });
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
+  registerCaptureRoutes(app, { uow: deps.uow });
   registerWsRoutes(app, { hub });
 
   return app;
