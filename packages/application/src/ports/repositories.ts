@@ -1,5 +1,14 @@
 import type { User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
 
+/** Minimal projection used by `discovery/dedup.ts`'s pure matcher (task 029). */
+export interface DedupCandidate {
+  readonly id: string;
+  readonly urlHash: string | null;
+  readonly title: string;
+  readonly company: string | null;
+  readonly dedupGroupId: string | null;
+}
+
 export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: UserId): Promise<User | null>;
@@ -25,6 +34,19 @@ export interface JobPostingRepository {
    * ownership-scoped read.
    */
   findBySourceAndExternalId(sourceConnectorKey: string, externalId: string): Promise<JobPosting | null>;
+  /**
+   * Dedup candidate pool for one user (task 029): the minimal projection
+   * `dedup.ts`'s pure matcher needs (id, urlHash, title, company,
+   * dedupGroupId), not full `JobPosting` aggregates with `descriptionMd`/
+   * embeddings — ingestion runs this once per newly-fetched job, so it's
+   * deliberately cheap. KNOWN LIMITATION: returns up to `limit` of the
+   * user's most-recently-ingested postings, not an indexed
+   * trigram/embedding similarity search — adequate for this milestone's
+   * scale, revisit (real SQL similarity search, per design §2's "trigram on
+   * title+company") before the per-user posting count gets large enough for
+   * this to matter.
+   */
+  listDedupCandidatesForUser(userId: UserId, limit: number): Promise<DedupCandidate[]>;
   /**
    * Serializes the read-check-embed-write sequence for one job posting
    * (task 017 — closes the last read-then-write race in this class, after

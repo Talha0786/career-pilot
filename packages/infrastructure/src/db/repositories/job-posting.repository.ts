@@ -1,6 +1,6 @@
 import { eq, and, lt, desc, sql } from 'drizzle-orm';
 import { JobPosting, asUserId, asJobPostingId } from '@careerpilot/domain';
-import type { JobPostingRepository } from '@careerpilot/application';
+import type { JobPostingRepository, DedupCandidate } from '@careerpilot/application';
 import type { Db } from '../client.js';
 import { jobPostings } from '../schema/index.js';
 
@@ -33,6 +33,23 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
       .limit(1);
     const row = rows[0];
     return row ? this.toDomain(row) : null;
+  }
+
+  /** Task 029 dedup candidate pool — see the port's doc comment for the known scale limitation. */
+  async listDedupCandidatesForUser(userId: ReturnType<typeof asUserId>, limit: number): Promise<DedupCandidate[]> {
+    const rows = await this.db
+      .select({
+        id: jobPostings.id,
+        urlHash: jobPostings.urlHash,
+        title: jobPostings.title,
+        company: jobPostings.company,
+        dedupGroupId: jobPostings.dedupGroupId,
+      })
+      .from(jobPostings)
+      .where(eq(jobPostings.userId, userId))
+      .orderBy(desc(jobPostings.ingestedAt))
+      .limit(limit);
+    return rows;
   }
 
   async listForUser(

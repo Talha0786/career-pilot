@@ -1,15 +1,29 @@
 import IORedis from 'ioredis';
+import { Queue } from 'bullmq';
 import pino from 'pino';
 import {
   createDb,
   DrizzleJobPostingRepository,
+  DrizzleConnectorConfigRepository,
+  DrizzleIngestionRunRepository,
+  DrizzleUnitOfWork,
+  SystemClock,
   OutboxRelay,
   BullMqOutboxPublisher,
   PostgresBudgetStore,
   OpenAiCompatibleLlmAdapter,
 } from '@careerpilot/infrastructure';
-import { GuardedLlmPort } from '@careerpilot/application';
+import { GuardedLlmPort, makeIngestJobBatchUseCase } from '@careerpilot/application';
+import { ConnectorRegistry } from '@careerpilot/connectors';
+import {
+  createGreenhouseConnector, createLeverConnector, createAshbyConnector,
+  createUsajobsConnector, createRssConnector, createManualConnector,
+} from '@careerpilot/connectors';
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
+import {
+  createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
+  type RunConnectorIngestionPayload,
+} from './handlers/run-connector-ingestion.handler.js';
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -34,11 +48,24 @@ const estimator = {
   actualEmbedCostUsd: (_model: string, promptTokens: number) => promptTokens * 0.00001,
 };
 
+/** Composition root registers connectors — packages/connectors itself has no import-time side effects (README). */
+function buildConnectorRegistry(): ConnectorRegistry {
+  const registry = new ConnectorRegistry();
+  registry.register(createGreenhouseConnector());
+  registry.register(createLeverConnector());
+  registry.register(createAshbyConnector());
+  registry.register(createUsajobsConnector());
+  registry.register(createRssConnector());
+  registry.register(createManualConnector());
+  return registry;
+}
+
 async function main(): Promise<void> {
   const { db, close: closeDb } = createDb(env.databaseUrl);
   const workerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const ingestionConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 
   const jobPostings = new DrizzleJobPostingRepository(db);
   const llm = new OpenAiCompatibleLlmAdapter(env.llmBaseUrl, env.llmApiKey);
@@ -56,6 +83,32 @@ async function main(): Promise<void> {
     },
   });
 
+  // Task 029: scheduler + ingestion pipeline. A connector run reuses the
+  // same outbox mechanism as everything else (ADR-007) via ingestJobBatch's
+  // UnitOfWork — no separate event-delivery path.
+  const connectorConfigs = new DrizzleConnectorConfigRepository(db);
+  const ingestionRuns = new DrizzleIngestionRunRepository(db);
+  const ingestJobBatch = makeIngestJobBatchUseCase({ uow: new DrizzleUnitOfWork(db) });
+  const registry = buildConnectorRegistry();
+  const connectorIngestionQueue = new Queue<RunConnectorIngestionPayload>(CONNECTOR_INGESTION_QUEUE, { connection: ingestionConnection });
+  const connectorIngestionWorker = createRunConnectorIngestionWorker({
+    connection: ingestionConnection,
+    connectorConfigs,
+    ingestionRuns,
+    ingestJobBatch,
+    registry,
+    clock: new SystemClock(),
+    logger,
+  });
+  try {
+    await scheduleConnectorIngestions(connectorIngestionQueue, connectorConfigs);
+  } catch (err) {
+    // Scheduling is best-effort at startup — an empty/misconfigured
+    // connector_configs table must never prevent the worker (embeddings,
+    // outbox relay) from starting.
+    logger.error({ err }, 'failed to schedule connector ingestions at startup');
+  }
+
   const relayPublisher = new BullMqOutboxPublisher(relayConnection);
   const relay = new OutboxRelay(db, relayPublisher, env.outboxMaxAttempts);
 
@@ -72,17 +125,20 @@ async function main(): Promise<void> {
     }
   })();
 
-  logger.info('worker + outbox relay running');
+  logger.info('worker + outbox relay + connector ingestion running');
 
   const shutdown = async (): Promise<void> => {
     logger.info('shutting down');
     relayRunning = false;
     await relayLoop;
     await worker.close();
+    await connectorIngestionWorker.close();
+    await connectorIngestionQueue.close();
     await relayPublisher.closeAll();
     await workerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();
+    await ingestionConnection.quit();
     await closeDb();
     process.exit(0);
   };

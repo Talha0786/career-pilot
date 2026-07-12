@@ -1,7 +1,8 @@
 import type { User, JobPosting, Application, UserId, JobPostingId, ApplicationId } from '@careerpilot/domain';
 import type {
   UserRepository, JobPostingRepository, ApplicationRepository,
-  OutboxPort, UnitOfWork, TransactionContext, HasherPort,
+  OutboxPort, UnitOfWork, TransactionContext, HasherPort, DedupCandidate,
+  ConnectorConfigRepository, ConnectorConfig, IngestionRunRepository, IngestionRun, IngestionRunStats,
 } from '../src/ports/repositories.js';
 
 /**
@@ -39,6 +40,12 @@ export class FakeJobPostingRepository implements JobPostingRepository {
       if (job.sourceConnectorKey === sourceConnectorKey && job.externalId === externalId) return job;
     }
     return null;
+  }
+  async listDedupCandidatesForUser(userId: UserId, limit: number): Promise<DedupCandidate[]> {
+    return [...this.byId.values()]
+      .filter((j) => j.userId === userId)
+      .slice(0, limit)
+      .map((j) => ({ id: j.id, urlHash: j.urlHash, title: j.title, company: j.company, dedupGroupId: j.dedupGroupId }));
   }
   async listForUser(userId: UserId, opts: { cursor?: string; limit: number }) {
     const items = [...this.byId.values()].filter((j) => j.userId === userId).slice(0, opts.limit);
@@ -87,6 +94,60 @@ export class FakeUnitOfWork implements UnitOfWork {
       applications: this.applications,
       outbox: this.outbox,
     });
+  }
+}
+
+export class FakeConnectorConfigRepository implements ConnectorConfigRepository {
+  private byId = new Map<string, ConnectorConfig>();
+
+  async findById(id: string): Promise<ConnectorConfig | null> {
+    return this.byId.get(id) ?? null;
+  }
+  async findByIdForUser(id: string, userId: UserId): Promise<ConnectorConfig | null> {
+    const c = this.byId.get(id);
+    return c && c.userId === userId ? c : null;
+  }
+  async listEnabled(): Promise<ConnectorConfig[]> {
+    return [...this.byId.values()].filter((c) => c.enabled);
+  }
+  async listForUser(userId: UserId): Promise<ConnectorConfig[]> {
+    return [...this.byId.values()].filter((c) => c.userId === userId);
+  }
+  async save(config: ConnectorConfig): Promise<void> {
+    this.byId.set(config.id, config);
+  }
+}
+
+export class FakeIngestionRunRepository implements IngestionRunRepository {
+  private byId = new Map<string, IngestionRun>();
+  private seq = 0;
+
+  async start(connectorConfigId: string, startedAt: Date): Promise<IngestionRun> {
+    const run: IngestionRun = {
+      id: `run-${++this.seq}`,
+      connectorConfigId,
+      startedAt,
+      finishedAt: null,
+      status: 'running',
+      stats: { fetched: 0, deduped: 0, inserted: 0 },
+      error: null,
+    };
+    this.byId.set(run.id, run);
+    return run;
+  }
+  async complete(
+    id: string,
+    result: { status: 'ok' | 'partial' | 'failed'; stats: IngestionRunStats; error?: string | null; finishedAt: Date },
+  ): Promise<void> {
+    const run = this.byId.get(id);
+    if (!run) throw new Error(`no such ingestion run: ${id}`);
+    this.byId.set(id, { ...run, status: result.status, stats: result.stats, error: result.error ?? null, finishedAt: result.finishedAt });
+  }
+  async listRecentForConnector(connectorConfigId: string, limit: number): Promise<IngestionRun[]> {
+    return [...this.byId.values()]
+      .filter((r) => r.connectorConfigId === connectorConfigId)
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+      .slice(0, limit);
   }
 }
 
