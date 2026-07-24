@@ -1,0 +1,37 @@
+{
+  "id": "05-domain-mismatch-strong-skills",
+  "notes": "Strong, senior, directly-applicable technical skills (Python/ML/statistics) but an entirely different industry domain (quantitative finance vs. genomics/healthcare) — human label expects a mid-high score: the technical core transfers, but domain-specific knowledge does not.",
+  "expectedOverall": 0.6,
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Senior data scientist with 7 years applying machine learning to quantitative trading strategies in finance." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Senior Data Scientist",
+          "organization": "Ashcroft Capital",
+          "startDate": "2018-02",
+          "endDate": null,
+          "bullets": [
+            "Built and deployed gradient-boosted and deep learning models predicting short-term price movements for a systematic trading desk.",
+            "Designed statistical backtesting frameworks used to validate every strategy before live capital allocation.",
+            "Mentored 2 junior data scientists on experiment design and model evaluation."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "ML/Stats", "skills": ["Python", "PyTorch", "scikit-learn", "Statistics", "Time-series modeling"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Senior Data Scientist, Genomics",
+    "company": "Helix Bio",
+    "descriptionMd": "We are hiring a Senior Data Scientist to build machine learning models on genomic sequencing data for early cancer detection. Required: 5+ years applying ML/statistics in Python, strong experimental design and model evaluation skills. Prior genomics or healthcare domain experience is preferred but not required — we will train the right technical hire on the biology."
+  }
+}

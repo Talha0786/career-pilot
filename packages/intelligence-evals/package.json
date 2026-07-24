@@ -1,0 +1,25 @@
+{
+  "name": "@careerpilot/intelligence-evals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "eval": "tsx src/index.ts",
+    "eval:resume-import": "tsx src/run-resume-import-eval.ts",
+    "eval:matching": "tsx src/run-matching-eval.ts",
+    "eval:tailoring": "tsx src/run-tailoring-eval.ts"
+  },
+  "dependencies": {
+    "@careerpilot/domain": "workspace:*",
+    "@careerpilot/application": "workspace:*",
+    "@careerpilot/infrastructure": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.9.3",
+    "tsx": "^4.19.2"
+  }
+}

@@ -41,6 +41,66 @@ jobs:
         run: |
           echo "::error::Nightly real-Ollama contract test failed — the OpenAiCompatibleLlmAdapter may no longer be compatible with the current Ollama embeddings API shape."
 
+  # Task 042: the M5 intelligence eval suite (packages/intelligence-evals)
+  # against REAL pinned models — this sandbox's own local runs (recorded in
+  # tasks/042.md's Status note) used the same real-Ollama setup below, this
+  # job is what makes it the unconditional, always-on gate (a laptop/sandbox
+  # without a live Ollama reachable is a real, documented possibility; CI is
+  # not). `eval:resume-import` (no LLM involved) and `eval:tailoring` (task
+  # 040's 0-unsupported-claims-survive-verification gate — the most
+  # important thing this job checks) both FAIL THE WORKFLOW on a non-zero
+  # exit; `eval:matching` is run but NOT step-gated the same way, matching
+  # `packages/intelligence-evals/README.md`'s documented posture (a
+  # correlation number from a 5-fixture golden set is a soft signal, not a
+  # hard numeric floor — expand the fixture set before tightening this).
+  intelligence-evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama
+        run: |
+          ollama serve &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:11434/api/tags >/dev/null && break
+            sleep 1
+          done
+
+      - name: Pull pinned models
+        run: |
+          ollama pull "${{ env.OLLAMA_EMBEDDING_MODEL }}"
+          ollama pull llama3.1
+
+      - name: Resume-import eval (no LLM — deterministic 90% field-accuracy gate)
+        run: pnpm --filter @careerpilot/intelligence-evals run eval:resume-import
+
+      - name: Matching eval (Spearman correlation — reported, not step-gated; see README)
+        run: pnpm --filter @careerpilot/intelligence-evals run eval:matching
+        continue-on-error: true
+
+      - name: Tailoring eval (task 040's 0-unsupported-claims-survive-verification hard gate)
+        run: pnpm --filter @careerpilot/intelligence-evals run eval:tailoring
+
+      - name: Upload eval result JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-eval-results
+          path: packages/intelligence-evals/results/*.json
+          if-no-files-found: warn
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::A task-042 intelligence eval failed against real pinned models — check the uploaded intelligence-eval-results artifact. If this is the tailoring job, treat it as a genuine unsupported-claim leak (docs/06-agent-design.md §4), not a flaky test to retry past."
+
   # Task 028 acceptance: default CI runs fixture-only tests (no live network);
   # this nightly job is the live canary against each Class A connector's real
   # public endpoint. Non-blocking by design — a third-party board renaming or

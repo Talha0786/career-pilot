@@ -1,0 +1,22 @@
+Marcus Chen
+marcus.chen@mailbox.io
+(415) 555-0199
+
+Employment History
+Product Engineer | Globex Inc
+03/2019 – 08/2022
+• Shipped the self-serve onboarding flow, cutting signup time by 60%
+• Partnered with design on the v2 navigation redesign
+
+Projects
+Open Source Contribution
+Maintainer of a popular CLI tool with 2,000+ GitHub stars
+• Reviewed community pull requests
+• Wrote the v2 migration guide
+
+Education
+Bachelor of Science in Computer Engineering, Tech Institute
+2015 - 2019
+
+Skills
+Python; Django; React; Postgres; Docker

@@ -1,0 +1,20 @@
+{
+  "id": "resume-10",
+  "notes": "Recent-graduate resume with no Experience section at all, two Projects entries each with a title, a description line, AND bullets (the title/description/bullets grouping case).",
+  "fields": {
+    "contact.name": "Grace Kim",
+    "contact.email": "grace.kim@example.edu",
+    "contact.phone": "310-555-4471",
+    "summary.present": true,
+    "experience.count": 0,
+    "project.count": 2,
+    "project.0.name": "Campus Ride-Share App",
+    "project.0.hasBullets": true,
+    "project.1.name": "Personal Portfolio Site",
+    "project.1.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "University of Michigan",
+    "education.0.credential": "B.S. Computer Science",
+    "skills.count_min": 5
+  }
+}

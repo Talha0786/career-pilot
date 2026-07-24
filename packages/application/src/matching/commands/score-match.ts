@@ -121,7 +121,8 @@ export function makeScoreMatchUseCase(deps: {
 
     for (const job of candidates) {
       const result = await scoreOneCandidate({
-        profile, job, factsText, promptRender: prompt.render, model: deps.model, llm: deps.llm, userId: input.userId,
+        profile, job, factsText, promptRender: prompt.render, temperature: prompt.frontmatter.temperature,
+        model: deps.model, llm: deps.llm, userId: input.userId,
       });
       if (result.ok) {
         await deps.matchScores.save(result.value);
@@ -140,6 +141,7 @@ async function scoreOneCandidate(args: {
   job: JobPosting;
   factsText: string;
   promptRender: (vars: Record<string, string>) => string;
+  temperature: number;
   model: string;
   llm: GuardedLlmPort;
   userId: string;
@@ -155,7 +157,15 @@ async function scoreOneCandidate(args: {
 
   const attempt = async (promptText: string): Promise<Result<ScoreComponents, DomainError | LlmError>> => {
     const completion = await args.llm.complete(
-      { model: args.model, prompt: promptText },
+      // `jsonSchema` presence (not its content, see llm.port.ts) is what
+      // makes `OpenAiCompatibleLlmAdapter` set `response_format:
+      // {type:'json_object'}` — found missing here by task 042's real-Ollama
+      // eval run: without it, a small key-free local model (llama3.1) relies
+      // on prompt instructions alone and sometimes emits prose-wrapped or
+      // truncated JSON that fails even the ADR-006 one-repair-attempt retry.
+      // Cheap, structural fix; does not change what's asked of the model,
+      // only how the provider is told to constrain decoding.
+      { model: args.model, prompt: promptText, jsonSchema: { type: 'object' }, temperature: args.temperature },
       { userId: args.userId, refId: args.job.id, context: 'matching' },
     );
     if (!completion.ok) return completion;

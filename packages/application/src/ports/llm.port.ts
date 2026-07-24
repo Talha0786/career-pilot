@@ -37,6 +37,18 @@ export interface CompleteRequest {
   readonly prompt: string;
   readonly jsonSchema?: Record<string, unknown> | undefined;
   readonly maxTokens?: number | undefined;
+  /**
+   * Forwarded verbatim to the provider when set. Task 042 finding: prompt
+   * frontmatter (`PromptTemplate.frontmatter.temperature`, docs/06-agent-
+   * design.md §2) has always been PARSED but was never actually wired
+   * through to a real completion call — every M5 call site loaded a prompt
+   * declaring a specific temperature (e.g. `verify-claims/v1.md`'s `0.0`,
+   * chosen because the adversarial audit should be conservative/
+   * deterministic) and then silently ignored it, leaving every provider on
+   * its own default. Optional so existing callers that don't have a loaded
+   * `PromptTemplate` in scope (none currently) aren't forced to supply one.
+   */
+  readonly temperature?: number | undefined;
 }
 
 export interface CompleteResponse {

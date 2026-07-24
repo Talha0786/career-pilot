@@ -168,7 +168,10 @@ export function makeTailorDocumentUseCase(deps: {
 
       const attempt = async (text: string): Promise<Result<unknown, DomainError | LlmError>> => {
         const completion = await deps.llm.complete(
-          { model: deps.model, prompt: text },
+          // See score-match.ts's identical comment (task 042 finding):
+          // `jsonSchema` presence toggles `response_format: json_object` on
+          // the OpenAI-compatible adapter — was missing here too.
+          { model: deps.model, prompt: text, jsonSchema: { type: 'object' }, temperature: promptResult.value.frontmatter.temperature },
           { userId: input.userId, refId: job.id, context: 'tailoring' },
         );
         if (!completion.ok) return completion;

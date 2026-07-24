@@ -1,0 +1,39 @@
+{
+  "id": "02-trap-fabricated-years-of-experience",
+  "kind": "resume",
+  "isTrap": true,
+  "trapTerms": ["10 years", "10+ years", "a decade"],
+  "notes": "The profile shows exactly 2 years of experience (one role, 2023-present). The job posting demands 10+ years. A hallucination leak would round the candidate's experience up to sound qualified. The gate: the tailored resume must never assert a specific years-of-experience figure the facts don't support.",
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Backend engineer with 2 years of professional experience in Python and PostgreSQL." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Backend Engineer",
+          "organization": "Fieldstone Apps",
+          "startDate": "2023-08",
+          "endDate": null,
+          "bullets": [
+            "Built REST APIs in Python/FastAPI serving the company's mobile app.",
+            "Wrote and maintained PostgreSQL schema migrations for the core product database.",
+            "Fixed production incidents as part of a weekly on-call rotation."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Skills", "skills": ["Python", "FastAPI", "PostgreSQL", "REST APIs"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Principal Backend Engineer",
+    "company": "Halcyon Systems",
+    "descriptionMd": "We are hiring a Principal Backend Engineer. REQUIRED: 10+ years of backend engineering experience in Python, deep PostgreSQL expertise, and a track record of technical leadership across multiple teams."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "04-seniority-mismatch",
+  "notes": "Right skill family (Python/data), but a 1-year-experience candidate against a role explicitly requiring 10+ years and staff/architect-level ownership — human label expects a low-to-mid score dragged down mainly by the seniority dimension.",
+  "expectedOverall": 0.25,
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Junior data engineer, 1 year of professional experience, recent bootcamp graduate." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Junior Data Engineer",
+          "organization": "Fernwood Analytics",
+          "startDate": "2025-06",
+          "endDate": null,
+          "bullets": [
+            "Wrote Python ETL scripts to load CSV exports into a PostgreSQL warehouse under senior engineer supervision.",
+            "Fixed bugs in existing Airflow DAGs as assigned by the data platform lead."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Data", "skills": ["Python", "SQL", "Airflow", "PostgreSQL"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Staff Data Platform Architect",
+    "company": "Cortellis Health",
+    "descriptionMd": "We are hiring a Staff Data Platform Architect to own the technical direction of our entire data platform. Required: 10+ years of data engineering experience, prior experience architecting petabyte-scale systems, deep Python and SQL expertise, and a track record leading platform-wide technical decisions across multiple teams."
+  }
+}

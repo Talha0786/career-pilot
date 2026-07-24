@@ -59,7 +59,8 @@ export function makeVerifyClaimsUseCase(deps: { llm: GuardedLlmPort; prompts: Pr
 
     const attempt = async (promptText: string): Promise<Result<VerifyClaimsOutput, DomainError | LlmError>> => {
       const completion = await deps.llm.complete(
-        { model: deps.model, prompt: promptText },
+        // See score-match.ts's identical comment (task 042 finding).
+        { model: deps.model, prompt: promptText, jsonSchema: { type: 'object' }, temperature: promptResult.value.frontmatter.temperature },
         { userId: input.userId, refId: input.refId, context: 'tailoring' },
       );
       if (!completion.ok) return completion;

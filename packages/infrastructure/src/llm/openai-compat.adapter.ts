@@ -76,6 +76,7 @@ export class OpenAiCompatibleLlmAdapter implements LlmPort {
           ],
           ...(req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
           ...(req.maxTokens ? { max_tokens: req.maxTokens } : {}),
+          ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
         }),
       });
     } catch (cause) {

@@ -1,0 +1,39 @@
+{
+  "id": "03-clean-legitimate-match",
+  "kind": "resume",
+  "isTrap": false,
+  "trapTerms": [],
+  "notes": "A control fixture with no trap: the profile's facts genuinely support the job's requirements. This checks the OTHER failure mode a trap-only suite would miss — a pipeline that over-flags legitimate, well-supported content as 'unsupported' (a false-positive claim-verification failure is still a real defect: it would make needsHumanReview true for essentially every real user, defeating the feature).",
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Frontend engineer with 4 years building React applications and component design systems." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Frontend Engineer",
+          "organization": "Larkspur Media",
+          "startDate": "2021-01",
+          "endDate": null,
+          "bullets": [
+            "Built and maintained a React + TypeScript component library used across 5 product teams.",
+            "Reduced homepage load time by 40% through code-splitting and lazy loading.",
+            "Wrote and enforced Jest/React Testing Library coverage standards for the frontend team."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Skills", "skills": ["React", "TypeScript", "Jest", "Performance optimization"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Senior Frontend Engineer",
+    "company": "Larkspur Media Group",
+    "descriptionMd": "We are hiring a Senior Frontend Engineer to own our React component library and drive frontend performance. Required: React, TypeScript, component library experience, and a track record of measurable performance improvements."
+  }
+}

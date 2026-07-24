@@ -1,0 +1,25 @@
+{
+  "id": "resume-05",
+  "notes": "Objective (not 'Summary') header, international phone format, two education entries in Institution/Credential order.",
+  "fields": {
+    "contact.name": "Elena Rossi",
+    "contact.email": "elena.rossi@example.net",
+    "contact.phone": "1-312-555-8890",
+    "summary.present": true,
+    "experience.count": 2,
+    "experience.0.title": "Data Scientist",
+    "experience.0.organization": "HealthCore Analytics",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Research Assistant",
+    "experience.1.organization": "University Lab",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "education.count": 2,
+    "education.0.institution": "Massachusetts Institute of Technology",
+    "education.0.credential": "M.S. Data Science",
+    "education.1.institution": "State College",
+    "education.1.credential": "B.A. Mathematics",
+    "skills.count_min": 5
+  }
+}
