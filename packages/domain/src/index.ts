@@ -25,3 +25,6 @@ export * from './discovery/events.js';
 export * from './pipeline/stage.js';
 export * from './pipeline/application.js';
 export * from './pipeline/events.js';
+
+// Matching context
+export * from './matching/match-score.js';

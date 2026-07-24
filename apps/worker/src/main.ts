@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import IORedis from 'ioredis';
 import { Queue } from 'bullmq';
 import pino from 'pino';
@@ -5,6 +7,7 @@ import {
   createDb,
   DrizzleJobPostingRepository,
   DrizzleProfileRepository,
+  DrizzleMatchScoreRepository,
   DrizzleConnectorConfigRepository,
   DrizzleIngestionRunRepository,
   DrizzleUnitOfWork,
@@ -16,8 +19,9 @@ import {
   DocumentTextExtractor,
   RedisDraftStore,
   TieredCostEstimator,
+  FilePromptStore,
 } from '@careerpilot/infrastructure';
-import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase } from '@careerpilot/application';
+import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase, MATCH_SCORE_QUEUE } from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
 import {
   createGreenhouseConnector, createLeverConnector, createAshbyConnector,
@@ -25,11 +29,20 @@ import {
 } from '@careerpilot/connectors';
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
 import { createProfileFactsChangedWorker } from './handlers/profile-facts-changed.handler.js';
+import { createScoreMatchWorker } from './handlers/score-match.handler.js';
 import {
   createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
   type RunConnectorIngestionPayload,
 } from './handlers/run-connector-ingestion.handler.js';
 import { createParseResumeWorker } from './handlers/parse-resume.handler.js';
+
+// apps/worker/src/main.ts -> ../../../prompts is the repo root's prompts/
+// dir in BOTH local dev (ts-node/tsx running from source) and the Docker
+// image (Dockerfile COPYs prompts/ to /app/prompts, preserving the same
+// apps/worker/src -> repo-root relative layout) — resolved from this
+// file's own location, never process.cwd() (task 038; same posture task
+// 034's FilePromptStore already requires — injected path, not hardcoded).
+const PROMPTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../prompts');
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -38,6 +51,11 @@ const env = {
   llmBaseUrl: process.env.LLM_BASE_URL ?? 'http://localhost:11434/v1',
   llmApiKey: process.env.LLM_API_KEY || null,
   llmEmbeddingModel: process.env.LLM_EMBEDDING_MODEL ?? 'nomic-embed-text',
+  // Task 038: separate from the embedding model — match scoring needs a
+  // chat/completion-capable model, not an embeddings-only one. Defaults to
+  // a common local Ollama chat model; BYO cloud key path (ADR-006) would
+  // override this to a stronger model for quality-sensitive routing.
+  llmMatchModel: process.env.LLM_MATCH_MODEL ?? 'llama3.1',
   llmMonthlyBudgetUsd: Number(process.env.LLM_MONTHLY_BUDGET_USD ?? 10),
   outboxPollIntervalMs: Number(process.env.OUTBOX_POLL_INTERVAL_MS ?? 1000),
   outboxBatchSize: Number(process.env.OUTBOX_BATCH_SIZE ?? 50),
@@ -70,6 +88,8 @@ async function main(): Promise<void> {
   const { db, close: closeDb } = createDb(env.databaseUrl);
   const workerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const profileWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const matchWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const matchQueueConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const resumeWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
@@ -96,11 +116,42 @@ async function main(): Promise<void> {
   // job postings, consuming `profile.facts_changed` instead of
   // `discovery.job_posted`.
   const profiles = new DrizzleProfileRepository(db);
+  // Task 038: "job-triggered" match-scoring path — automatically requests a
+  // rescan once a profile's embedding is ready, so a user never has to
+  // manually hit the on-demand API route just to get an initial score.
+  // Best-effort: a failed enqueue here logs and moves on rather than
+  // failing the embed itself (the embed already succeeded and persisted;
+  // losing the auto-rescan trigger is recoverable via the on-demand route,
+  // losing the embed result would not be).
+  const matchScoreQueue = new Queue(MATCH_SCORE_QUEUE, { connection: matchQueueConnection });
   const profileWorker = createProfileFactsChangedWorker({
     connection: profileWorkerConnection,
     profiles,
     llm: guardedLlm,
     embeddingModel: env.llmEmbeddingModel,
+    logger,
+    onEmbedded: async (event) => {
+      try {
+        await matchScoreQueue.add(MATCH_SCORE_QUEUE, { profileId: event.careerProfileId, userId: event.userId });
+      } catch (err) {
+        logger.error({ err, profileId: event.careerProfileId }, 'failed to enqueue auto-rescan after profile embed');
+      }
+    },
+  });
+
+  // Task 038: match rubric scoring — consumes matching.score_requested,
+  // whether it was enqueued automatically (above) or on-demand via
+  // POST /profile/rescan (apps/api/src/routes/matching.ts).
+  const matchScores = new DrizzleMatchScoreRepository(db);
+  const prompts = new FilePromptStore(PROMPTS_DIR);
+  const matchWorker = createScoreMatchWorker({
+    connection: matchWorkerConnection,
+    profiles,
+    jobPostings,
+    matchScores,
+    llm: guardedLlm,
+    prompts,
+    model: env.llmMatchModel,
     logger,
   });
 
@@ -166,12 +217,16 @@ async function main(): Promise<void> {
     await relayLoop;
     await worker.close();
     await profileWorker.close();
+    await matchWorker.close();
+    await matchScoreQueue.close();
     await connectorIngestionWorker.close();
     await connectorIngestionQueue.close();
     await resumeWorker.close();
     await relayPublisher.closeAll();
     await workerConnection.quit();
     await profileWorkerConnection.quit();
+    await matchWorkerConnection.quit();
+    await matchQueueConnection.quit();
     await resumeWorkerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();

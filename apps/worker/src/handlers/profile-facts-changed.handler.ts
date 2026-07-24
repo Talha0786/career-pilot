@@ -23,6 +23,14 @@ export function createProfileFactsChangedWorker(deps: {
   llm: GuardedLlmPort;
   embeddingModel: string;
   logger: Logger;
+  /**
+   * Task 038's "job-triggered" match-scoring path: called once after a
+   * successful embed, so a profile automatically gets an initial rescan
+   * without the user having to hit the on-demand API route first. Optional
+   * so tests / a stripped-down worker composition can skip it — embedding
+   * must never depend on scoring succeeding.
+   */
+  onEmbedded?: (event: { careerProfileId: string; userId: string }) => Promise<void>;
 }): Worker<ProfileFactsChangedPayload> {
   const embedCareerProfile = makeEmbedCareerProfileUseCase({
     profiles: deps.profiles,
@@ -53,6 +61,7 @@ export function createProfileFactsChangedWorker(deps: {
       }
 
       log.info('profile embedding complete');
+      await deps.onEmbedded?.({ careerProfileId: job.data.careerProfileId, userId: job.data.userId });
     },
     { connection: deps.connection, concurrency: 4 },
   );

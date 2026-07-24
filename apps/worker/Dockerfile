@@ -29,6 +29,11 @@ COPY packages/contracts ./packages/contracts
 COPY packages/infrastructure ./packages/infrastructure
 COPY packages/connectors ./packages/connectors
 COPY apps/worker ./apps/worker
+# Task 038: prompts/{task}/{version}.md (task 034 convention) — the
+# match-score/tailoring/verify-claims pipelines all load these at runtime
+# via FilePromptStore, resolved relative to this file's own location
+# (apps/worker/src/main.ts), not process.cwd() — see main.ts's PROMPTS_DIR.
+COPY prompts ./prompts
 USER careerpilot
 WORKDIR /app/apps/worker
 CMD ["node", "--import", "tsx", "src/main.ts"]

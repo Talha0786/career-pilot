@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ScoreComponentsSchema } from './matching.js';
 
 export const StageSchema = z.enum([
   'discovered', 'interested', 'applied', 'screening',
@@ -28,6 +29,13 @@ export const ApplicationCardSchema = z.object({
   stage: StageSchema,
   embeddingStatus: z.enum(['pending', 'ready', 'failed']),
   updatedAt: z.string().datetime(),
+  /** Task 038 — the caller's active-profile rubric score against this job, when one has been computed. Absent (not null) when no score exists yet. */
+  matchScore: z
+    .object({
+      components: ScoreComponentsSchema,
+      computedAt: z.string().datetime(),
+    })
+    .optional(),
 });
 export type ApplicationCard = z.infer<typeof ApplicationCardSchema>;
 

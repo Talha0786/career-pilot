@@ -35,3 +35,6 @@ export * from './profile/commands/import-resume.js';
 export * from './profile/commands/confirm-resume-import.js';
 export * from './profile/queries/get-resume-import-draft.js';
 export * from './documents/commands/render-document.js';
+export * from './matching/commands/score-match.js';
+export * from './matching/commands/request-match-scan.js';
+export * from './matching/queries/list-matches.js';

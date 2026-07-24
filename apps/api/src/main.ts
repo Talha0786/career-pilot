@@ -10,6 +10,7 @@ import {
   DrizzleConnectorConfigRepository,
   DrizzleProfileRepository,
   DrizzleDocumentRepository,
+  DrizzleMatchScoreRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
   BullMqQueuePort,
@@ -44,6 +45,7 @@ async function main(): Promise<void> {
   const connectorConfigs = new DrizzleConnectorConfigRepository(db);
   const profiles = new DrizzleProfileRepository(db);
   const documents = new DrizzleDocumentRepository(db);
+  const matchScores = new DrizzleMatchScoreRepository(db);
   const hasher = new Argon2Hasher();
   const budgetStore = new PostgresBudgetStore(db);
   const outboxRelay = new OutboxRelay(db, new BullMqOutboxPublisher(redis));
@@ -63,6 +65,7 @@ async function main(): Promise<void> {
     connectorConfigs,
     profiles,
     documents,
+    matchScores,
     queue,
     drafts,
     renderer,

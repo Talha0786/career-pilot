@@ -17,6 +17,7 @@ import type {
   DraftStorePort,
   DocumentRendererPort,
   ObjectStoragePort,
+  MatchScoreRepository,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
 import { registerAuthPlugin } from './plugins/auth.js';
@@ -33,6 +34,7 @@ import { registerConnectorRoutes } from './routes/connectors.js';
 import { registerWsRoutes } from './routes/ws.js';
 import { registerProfileRoutes } from './routes/profile.js';
 import { registerDocumentRoutes } from './routes/documents.js';
+import { registerMatchingRoutes } from './routes/matching.js';
 import { ConnectionHub } from './ws/hub.js';
 
 declare module 'fastify' {
@@ -59,6 +61,7 @@ export interface AppDeps {
   jobQueue: Queue;
   budgetStore: PostgresBudgetStore;
   connectorConfigs: ConnectorConfigRepository;
+  matchScores: MatchScoreRepository;
   /** Fastify owns and creates the pino instance from this — false disables
    * logging entirely, which is what tests want (Fastify inject is noisy
    * otherwise). */
@@ -89,7 +92,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerAuthRoutes(app, { users: deps.users, hasher: deps.hasher, sessions });
   registerJobRoutes(app, { uow: deps.uow, jobPostings: deps.jobPostings });
   registerApplicationRoutes(app, { uow: deps.uow });
-  registerBoardRoutes(app, { applications: deps.applications, jobPostings: deps.jobPostings });
+  registerBoardRoutes(app, {
+    applications: deps.applications, jobPostings: deps.jobPostings, profiles: deps.profiles, matchScores: deps.matchScores,
+  });
   registerProfileRoutes(app, { uow: deps.uow, profiles: deps.profiles, queue: deps.queue, drafts: deps.drafts });
   registerDocumentRoutes(app, {
     uow: deps.uow,
@@ -101,6 +106,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
   registerCaptureRoutes(app, { uow: deps.uow });
   registerConnectorRoutes(app, { connectorConfigs: deps.connectorConfigs });
+  registerMatchingRoutes(app, {
+    profiles: deps.profiles, jobPostings: deps.jobPostings, matchScores: deps.matchScores, queue: deps.queue,
+  });
   registerWsRoutes(app, { hub });
 
   return app;
