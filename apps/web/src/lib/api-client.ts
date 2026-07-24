@@ -14,7 +14,8 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/** Exported for apps/web/src/lib/api/{profile,documents}.ts (task 025) — same fetch wrapper, one source of truth. */
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
     headers: { 'content-type': 'application/json', ...init?.headers },

@@ -49,7 +49,7 @@ Every task file (`NNN.md`) has exactly these sections:
 | [022](022.md) | API: profile & document routes | M3 | DONE |
 | [023](023.md) | Resume import pipeline (PDF/DOCX → structured profile → confirm) | M3 | DONE |
 | [024](024.md) | Document engine: structured model → PDF/DOCX rendering | M3 | DONE |
-| [025](025.md) | Web UI: profile editor, import confirm flow, document history | M3 | TODO |
+| [025](025.md) | Web UI: profile editor, import confirm flow, document history | M3 | DONE |
 | [026](026.md) | Connector SDK: ConnectorPort, compliance classes, contract test-kit | M4 | TODO |
 | [027](027.md) | Schema: connector_configs, ingestion_runs; extend job_postings | M4 | TODO |
 | [028](028.md) | Class A connectors: Greenhouse, Lever, Ashby, USAJobs, RSS, manual | M4 | TODO |
