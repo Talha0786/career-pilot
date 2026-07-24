@@ -12,6 +12,8 @@ import {
   BullMqOutboxPublisher,
   PostgresBudgetStore,
   OpenAiCompatibleLlmAdapter,
+  DocumentTextExtractor,
+  RedisDraftStore,
 } from '@careerpilot/infrastructure';
 import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase } from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
@@ -24,6 +26,7 @@ import {
   createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
   type RunConnectorIngestionPayload,
 } from './handlers/run-connector-ingestion.handler.js';
+import { createParseResumeWorker } from './handlers/parse-resume.handler.js';
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -46,6 +49,9 @@ const logger = pino({ level: env.logLevel });
 const estimator = {
   estimateEmbedCostUsd: (req: { input: string }) => (req.input.length / 4) * 0.00001,
   actualEmbedCostUsd: (_model: string, promptTokens: number) => promptTokens * 0.00001,
+  estimateCompleteCostUsd: (req: { prompt: string }) => (req.prompt.length / 4) * 0.00002,
+  actualCompleteCostUsd: (_model: string, promptTokens: number, completionTokens: number) =>
+    (promptTokens + completionTokens) * 0.00002,
 };
 
 /** Composition root registers connectors — packages/connectors itself has no import-time side effects (README). */
@@ -63,9 +69,11 @@ function buildConnectorRegistry(): ConnectorRegistry {
 async function main(): Promise<void> {
   const { db, close: closeDb } = createDb(env.databaseUrl);
   const workerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const resumeWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const ingestionConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const draftStoreConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 
   const jobPostings = new DrizzleJobPostingRepository(db);
   const llm = new OpenAiCompatibleLlmAdapter(env.llmBaseUrl, env.llmApiKey);
@@ -111,6 +119,16 @@ async function main(): Promise<void> {
     logger.error({ err }, 'failed to schedule connector ingestions at startup');
   }
 
+  // Task 023: resume import parsing. Deliberately does NOT go through
+  // guardedLlm — mapResumeTextToDraft is heuristic/network-free (see its
+  // file-level comment); nothing here spends LLM budget.
+  const resumeWorker = createParseResumeWorker({
+    connection: resumeWorkerConnection,
+    extractor: new DocumentTextExtractor(),
+    drafts: new RedisDraftStore(draftStoreConnection),
+    logger,
+  });
+
   const relayPublisher = new BullMqOutboxPublisher(relayConnection);
   const relay = new OutboxRelay(db, relayPublisher, env.outboxMaxAttempts);
 
@@ -136,11 +154,14 @@ async function main(): Promise<void> {
     await worker.close();
     await connectorIngestionWorker.close();
     await connectorIngestionQueue.close();
+    await resumeWorker.close();
     await relayPublisher.closeAll();
     await workerConnection.quit();
+    await resumeWorkerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();
     await ingestionConnection.quit();
+    await draftStoreConnection.quit();
     await closeDb();
     process.exit(0);
   };

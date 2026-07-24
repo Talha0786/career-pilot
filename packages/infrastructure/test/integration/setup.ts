@@ -34,7 +34,8 @@ export async function withTestDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
 export async function resetTestDb(db: Db): Promise<void> {
   await db.execute(
     (`TRUNCATE TABLE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, ` +
-      `ingestion_runs, connector_configs, users RESTART IDENTITY CASCADE;`) as never,
+      `ingestion_runs, connector_configs, document_versions, documents, profile_sections, career_profiles, ` +
+      `users RESTART IDENTITY CASCADE;`) as never,
   );
 }
 

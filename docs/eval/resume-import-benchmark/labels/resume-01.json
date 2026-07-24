@@ -1,0 +1,23 @@
+{
+  "id": "resume-01",
+  "notes": "Clean, well-structured baseline resume.",
+  "fields": {
+    "contact.name": "Jane Smith",
+    "contact.email": "jane.smith@example.com",
+    "contact.phone": "555-123-4567",
+    "summary.present": true,
+    "experience.count": 2,
+    "experience.0.title": "Senior Software Engineer",
+    "experience.0.organization": "Acme Corp",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Software Engineer",
+    "experience.1.organization": "Initech",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "State University",
+    "education.0.credential": "B.S. Computer Science",
+    "skills.count_min": 5
+  }
+}

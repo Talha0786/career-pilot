@@ -1,0 +1,13 @@
+Jane Smith
+jane.smith@example.com | 555-123-4567 | Austin, TX
+Backend engineer with 8 years of experience building distributed systems.
+EXPERIENCE
+Senior Software Engineer
+Acme Corp
+Jan 2020 - Present
+• Led migration of the payments service
+• Reduced p99 latency by 40%
+EDUCATION
+State University
+B.S. Computer Science
+2012 - 2016

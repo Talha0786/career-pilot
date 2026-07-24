@@ -23,8 +23,32 @@ export interface LlmError {
   readonly message: string;
 }
 
+/**
+ * Chat/completion capability (task 023 — resume field mapping needs
+ * unstructured-text-to-structured-JSON extraction, which `embed` can't do).
+ * `jsonSchema` is a hint, not a guarantee — adapters that support native
+ * JSON-mode pass it through; the caller must still validate the response
+ * (see `resume-field-mapper.ts`), same "never trust an external HTTP
+ * response's shape" posture as `openai-compat.adapter.ts`'s embedding parser.
+ */
+export interface CompleteRequest {
+  readonly model: string;
+  readonly system?: string | undefined;
+  readonly prompt: string;
+  readonly jsonSchema?: Record<string, unknown> | undefined;
+  readonly maxTokens?: number | undefined;
+}
+
+export interface CompleteResponse {
+  readonly text: string;
+  readonly model: string;
+  readonly promptTokens: number;
+  readonly completionTokens: number;
+}
+
 export interface LlmPort {
   embed(req: EmbedRequest): Promise<Result<EmbedResponse, LlmError>>;
+  complete(req: CompleteRequest): Promise<Result<CompleteResponse, LlmError>>;
 }
 
 /** Every dispatch — success or failure — becomes one of these for ai_invocations. */

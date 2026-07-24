@@ -4,3 +4,5 @@ export * from './jobs.js';
 export * from './board.js';
 export * from './capture.js';
 export * from './connectors.js';
+export * from './profile.js';
+export * from './documents.js';

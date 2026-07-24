@@ -1,0 +1,23 @@
+Grace Kim
+grace.kim@example.edu
+310-555-4471
+
+Summary
+Recent computer science graduate seeking an entry-level software engineering role.
+
+Projects
+Campus Ride-Share App
+Built a full-stack ride-share matching app for university students
+- Implemented real-time matching with a greedy algorithm
+- Deployed on Heroku with a Postgres backend
+
+Personal Portfolio Site
+A statically generated portfolio built with Next.js
+- Achieved a 100 Lighthouse performance score
+
+Education
+University of Michigan, B.S. Computer Science
+2020 - 2024
+
+Skills
+JavaScript, Python, React, Node.js, Git

@@ -1,0 +1,23 @@
+Derek Walsh
+derek.walsh@example.com
+303-555-1120
+
+Summary
+Engineering manager with experience scaling teams from 5 to 40 engineers.
+
+Experience
+Engineering Manager at StreamWorks
+Feb 2020 - Present
+- Grew the platform org from 5 to 40 engineers across three teams
+- Introduced quarterly OKRs adopted company-wide
+
+Software Engineer II Netflix
+Jun 2017 - Jan 2020
+- Worked on the video encoding pipeline
+
+Education
+University of Colorado Boulder, B.S. Computer Science
+2013 - 2017
+
+Technical Proficiencies
+Leadership, System Design, Python, Java, AWS

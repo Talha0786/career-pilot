@@ -43,11 +43,23 @@ export type Branded<T, B extends string> = T & { readonly [brand]: B };
 export type UserId = Branded<string, 'UserId'>;
 export type JobPostingId = Branded<string, 'JobPostingId'>;
 export type ApplicationId = Branded<string, 'ApplicationId'>;
+export type CareerProfileId = Branded<string, 'CareerProfileId'>;
+export type ProfileSectionId = Branded<string, 'ProfileSectionId'>;
+export type DocumentId = Branded<string, 'DocumentId'>;
+export type DocumentVersionId = Branded<string, 'DocumentVersionId'>;
 
 export const newUserId = (): UserId => uuidv7() as UserId;
 export const newJobPostingId = (): JobPostingId => uuidv7() as JobPostingId;
 export const newApplicationId = (): ApplicationId => uuidv7() as ApplicationId;
+export const newCareerProfileId = (): CareerProfileId => uuidv7() as CareerProfileId;
+export const newProfileSectionId = (): ProfileSectionId => uuidv7() as ProfileSectionId;
+export const newDocumentId = (): DocumentId => uuidv7() as DocumentId;
+export const newDocumentVersionId = (): DocumentVersionId => uuidv7() as DocumentVersionId;
 
 export const asUserId = (v: string): UserId => v as UserId;
 export const asJobPostingId = (v: string): JobPostingId => v as JobPostingId;
 export const asApplicationId = (v: string): ApplicationId => v as ApplicationId;
+export const asCareerProfileId = (v: string): CareerProfileId => v as CareerProfileId;
+export const asProfileSectionId = (v: string): ProfileSectionId => v as ProfileSectionId;
+export const asDocumentId = (v: string): DocumentId => v as DocumentId;
+export const asDocumentVersionId = (v: string): DocumentVersionId => v as DocumentVersionId;

@@ -127,6 +127,8 @@ export default function BoardPage() {
         title="CareerPilot board"
         right={
           <>
+            <a href="/profile" className="text-sm text-neutral-500 hover:text-neutral-800">Profile</a>
+            <a href="/documents" className="text-sm text-neutral-500 hover:text-neutral-800">Documents</a>
             <span className="text-sm text-neutral-500">{email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Log out

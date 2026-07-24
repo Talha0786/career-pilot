@@ -1,0 +1,17 @@
+{
+  "id": "resume-04",
+  "notes": "Minimal/sparse resume: no phone, no bullets, no education section, only 2 skills. Edge-case coverage.",
+  "fields": {
+    "contact.name": "Sam Okafor",
+    "contact.email": "sam.okafor@workmail.com",
+    "contact.phone": null,
+    "summary.present": false,
+    "experience.count": 1,
+    "experience.0.title": "Freelance Designer",
+    "experience.0.organization": "Self-Employed",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": false,
+    "education.count": 0,
+    "skills.count_min": 2
+  }
+}

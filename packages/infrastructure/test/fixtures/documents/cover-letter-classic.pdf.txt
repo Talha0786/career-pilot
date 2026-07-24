@@ -1,0 +1,7 @@
+Jane Smith
+jane.smith@example.com
+Hiring Manager, Acme Corp
+Dear Hiring Manager,
+I am writing to express my interest in the Senior Software Engineer role.
+In my current role I led the migration of our payments service to an event-driven architecture.
+Sincerely, Jane Smith

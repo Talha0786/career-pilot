@@ -1,4 +1,6 @@
-import type { LlmPort, EmbedRequest, EmbedResponse, LlmError, AiInvocationRecord } from './llm.port.js';
+import type {
+  LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError, AiInvocationRecord,
+} from './llm.port.js';
 import type { Result, DomainError } from '@careerpilot/domain';
 import { err, budgetExceeded } from '@careerpilot/domain';
 
@@ -25,6 +27,9 @@ export interface CostEstimator {
   estimateEmbedCostUsd(req: EmbedRequest): number;
   /** Actual cost after the call, from real token counts. */
   actualEmbedCostUsd(model: string, promptTokens: number): number;
+  /** Same shape as the embed pair, for chat/completion calls (task 023). */
+  estimateCompleteCostUsd(req: CompleteRequest): number;
+  actualCompleteCostUsd(model: string, promptTokens: number, completionTokens: number): number;
 }
 
 export class GuardedLlmPort {
@@ -94,6 +99,70 @@ export class GuardedLlmPort {
 
     // Failures are recorded too — cost accounting must reflect reality,
     // and a string of failures is itself a signal worth having in the data.
+    await this.store.recordInvocation({
+      userId: ctx.userId,
+      context: ctx.context,
+      refId: ctx.refId,
+      provider: this.provider,
+      model: req.model,
+      promptTokens: 0,
+      completionTokens: 0,
+      costUsd: 0,
+      latencyMs,
+      status: 'error',
+      error: result.error.message,
+    });
+    return result;
+  }
+
+  /** Same guard shape as `embed` — check-dispatch-record, budget-checked before any network I/O. */
+  async complete(
+    req: CompleteRequest,
+    ctx: { userId: string; refId: string; context: AiInvocationRecord['context'] },
+  ): Promise<Result<CompleteResponse, LlmError | DomainError>> {
+    if (this.store.withUserBudgetLock) {
+      return this.store.withUserBudgetLock(ctx.userId, () => this.doComplete(req, ctx));
+    }
+    return this.doComplete(req, ctx);
+  }
+
+  private async doComplete(
+    req: CompleteRequest,
+    ctx: { userId: string; refId: string; context: AiInvocationRecord['context'] },
+  ): Promise<Result<CompleteResponse, LlmError | DomainError>> {
+    const estimatedCost = this.estimator.estimateCompleteCostUsd(req);
+    const spent = await this.store.getMonthlySpend(ctx.userId);
+
+    if (spent + estimatedCost > this.monthlyBudgetUsd) {
+      return err(
+        budgetExceeded(
+          `Monthly LLM budget of $${this.monthlyBudgetUsd.toFixed(2)} would be exceeded`,
+          { spentUsd: spent.toFixed(4), estimatedUsd: estimatedCost.toFixed(4) },
+        ),
+      );
+    }
+
+    const start = this.clock();
+    const result = await this.inner.complete(req);
+    const latencyMs = this.clock() - start;
+
+    if (result.ok) {
+      await this.store.recordInvocation({
+        userId: ctx.userId,
+        context: ctx.context,
+        refId: ctx.refId,
+        provider: this.provider,
+        model: result.value.model,
+        promptTokens: result.value.promptTokens,
+        completionTokens: result.value.completionTokens,
+        costUsd: this.estimator.actualCompleteCostUsd(result.value.model, result.value.promptTokens, result.value.completionTokens),
+        latencyMs,
+        status: 'ok',
+        error: null,
+      });
+      return result;
+    }
+
     await this.store.recordInvocation({
       userId: ctx.userId,
       context: ctx.context,

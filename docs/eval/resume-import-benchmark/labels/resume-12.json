@@ -1,0 +1,23 @@
+{
+  "id": "resume-12",
+  "notes": "Deliberately includes two real parser limitations, scored honestly rather than avoided: (1) 'Software Engineer II Netflix' has no title/org separator the heuristic recognizes, so it cannot split title from company; (2) 'Technical Proficiencies' is not in the recognized skills-header vocabulary, so the skills section is missed entirely. Both are expected to fail in the scoring run — this fixture exists to keep the benchmark honest rather than artificially perfect.",
+  "fields": {
+    "contact.name": "Derek Walsh",
+    "contact.email": "derek.walsh@example.com",
+    "contact.phone": "303-555-1120",
+    "summary.present": true,
+    "experience.count": 2,
+    "experience.0.title": "Engineering Manager",
+    "experience.0.organization": "StreamWorks",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Software Engineer II",
+    "experience.1.organization": "Netflix",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "University of Colorado Boulder",
+    "education.0.credential": "B.S. Computer Science",
+    "skills.count_min": 5
+  }
+}
