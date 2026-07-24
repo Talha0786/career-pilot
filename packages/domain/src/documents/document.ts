@@ -2,7 +2,7 @@ import { AggregateRoot, createEvent } from '../shared/domain-event.js';
 import { type DocumentId, type UserId, newDocumentId } from '../shared/ids.js';
 import { type Result, ok, err } from '../shared/result.js';
 import { type DomainError, validationFailed, forbidden, notFound, conflict } from '../shared/errors.js';
-import { DocumentVersion, type DocumentVersionSnapshot, type DocumentVersionSource } from './document-version.js';
+import { DocumentVersion, type DocumentVersionSnapshot, type DocumentVersionSource, type FlaggedClaim } from './document-version.js';
 import { type DocumentContent } from './document-content.js';
 
 export type DocumentKind = 'resume' | 'cover_letter' | 'other';
@@ -110,6 +110,9 @@ export class Document extends AggregateRoot {
     content: DocumentContent;
     generationJobId?: string | undefined;
     profileFactsHash?: string | undefined;
+    /** Task 040 — see DocumentVersion's doc comment. */
+    needsHumanReview?: boolean | undefined;
+    flaggedClaims?: readonly FlaggedClaim[] | null | undefined;
     now?: Date | undefined;
   }): Result<DocumentVersion, DomainError> {
     if (this._deletedAt !== null) {
@@ -131,6 +134,8 @@ export class Document extends AggregateRoot {
       content: args.content,
       generationJobId: args.generationJobId,
       profileFactsHash: args.profileFactsHash,
+      needsHumanReview: args.needsHumanReview,
+      flaggedClaims: args.flaggedClaims,
       now: args.now,
     });
 

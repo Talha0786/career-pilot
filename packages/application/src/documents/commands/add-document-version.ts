@@ -3,6 +3,7 @@ import {
   notFound,
   type DocumentContent,
   type DocumentVersionSource,
+  type FlaggedClaim,
   type Result,
   type DomainError,
 } from '@careerpilot/domain';
@@ -14,6 +15,9 @@ export interface AddDocumentVersionInput {
   content: DocumentContent;
   generationJobId?: string | undefined;
   profileFactsHash?: string | undefined;
+  /** Task 040 — see DocumentVersion's doc comment. */
+  needsHumanReview?: boolean | undefined;
+  flaggedClaims?: readonly FlaggedClaim[] | null | undefined;
 }
 export interface AddDocumentVersionOutput {
   documentId: string;
@@ -49,6 +53,8 @@ export function makeAddDocumentVersionUseCase(deps: { uow: UnitOfWork }) {
         content: input.content,
         generationJobId: input.generationJobId,
         profileFactsHash: input.profileFactsHash,
+        needsHumanReview: input.needsHumanReview,
+        flaggedClaims: input.flaggedClaims,
       });
       if (!added.ok) return added;
 
