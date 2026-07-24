@@ -40,3 +40,36 @@ jobs:
         if: failure()
         run: |
           echo "::error::Nightly real-Ollama contract test failed — the OpenAiCompatibleLlmAdapter may no longer be compatible with the current Ollama embeddings API shape."
+
+  # Task 028 acceptance: default CI runs fixture-only tests (no live network);
+  # this nightly job is the live canary against each Class A connector's real
+  # public endpoint. Non-blocking by design — a third-party board renaming or
+  # going private is an external-service fact, not a code defect (same
+  # rationale as the ollama-contract job above), so this job's failure does
+  # NOT gate merges; it's report-only via the summary step.
+  connectors-live-canary:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run Class A/C connector live canaries
+        env:
+          # Optional — task 031's SerpApi canary and the USAJobs canary
+          # (task 028) are both BYO-key/registered-key by design; unset
+          # means "skip that one connector's live call," not "fail the job."
+          # The user must add these as repo secrets for the USAJobs/SerpApi
+          # canaries to run for real (flagged explicitly, not assumed present).
+          USAJOBS_API_KEY: ${{ secrets.USAJOBS_API_KEY }}
+          USAJOBS_USER_AGENT_EMAIL: ${{ secrets.USAJOBS_USER_AGENT_EMAIL }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+        run: pnpm test:nightly -- packages/connectors
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::One or more connector live canaries failed — check whether the underlying public board/feed/API changed shape or moved, not necessarily a code defect. This job is non-blocking."

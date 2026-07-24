@@ -33,7 +33,8 @@ export async function withTestDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
 /** Truncate everything between test files so each file starts from empty. */
 export async function resetTestDb(db: Db): Promise<void> {
   await db.execute(
-    `TRUNCATE TABLE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, users RESTART IDENTITY CASCADE;` as never,
+    (`TRUNCATE TABLE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, ` +
+      `ingestion_runs, connector_configs, users RESTART IDENTITY CASCADE;`) as never,
   );
 }
 

@@ -5,3 +5,4 @@ export * from './queue/bullmq-publisher.js';
 export * from './llm/openai-compat.adapter.js';
 export * from './llm/postgres-budget-store.js';
 export * from './auth/argon2-hasher.js';
+export * from './clock/system-clock.js';

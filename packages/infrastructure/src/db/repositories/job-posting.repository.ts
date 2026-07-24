@@ -1,6 +1,6 @@
 import { eq, and, lt, desc, sql } from 'drizzle-orm';
 import { JobPosting, asUserId, asJobPostingId } from '@careerpilot/domain';
-import type { JobPostingRepository } from '@careerpilot/application';
+import type { JobPostingRepository, DedupCandidate } from '@careerpilot/application';
 import type { Db } from '../client.js';
 import { jobPostings } from '../schema/index.js';
 
@@ -22,6 +22,34 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
     const rows = await this.db.select().from(jobPostings).where(eq(jobPostings.id, id)).limit(1);
     const row = rows[0];
     return row ? this.toDomain(row) : null;
+  }
+
+  /** Ingestion-path lookup (task 027/029) — the pre-write half of the unique index check. */
+  async findBySourceAndExternalId(sourceConnectorKey: string, externalId: string): Promise<JobPosting | null> {
+    const rows = await this.db
+      .select()
+      .from(jobPostings)
+      .where(and(eq(jobPostings.sourceConnectorKey, sourceConnectorKey), eq(jobPostings.externalId, externalId)))
+      .limit(1);
+    const row = rows[0];
+    return row ? this.toDomain(row) : null;
+  }
+
+  /** Task 029 dedup candidate pool — see the port's doc comment for the known scale limitation. */
+  async listDedupCandidatesForUser(userId: ReturnType<typeof asUserId>, limit: number): Promise<DedupCandidate[]> {
+    const rows = await this.db
+      .select({
+        id: jobPostings.id,
+        urlHash: jobPostings.urlHash,
+        title: jobPostings.title,
+        company: jobPostings.company,
+        dedupGroupId: jobPostings.dedupGroupId,
+      })
+      .from(jobPostings)
+      .where(eq(jobPostings.userId, userId))
+      .orderBy(desc(jobPostings.ingestedAt))
+      .limit(limit);
+    return rows;
   }
 
   async listForUser(
@@ -58,11 +86,18 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
         id: snap.id,
         userId: snap.userId,
         sourceConnectorKey: snap.sourceConnectorKey,
+        externalId: snap.externalId,
         url: snap.url,
         urlHash: snap.urlHash,
         company: snap.company,
         title: snap.title,
         descriptionMd: snap.descriptionMd,
+        status: snap.status,
+        location: snap.location,
+        remote: snap.remote,
+        salary: snap.salary,
+        postedAt: snap.postedAt,
+        dedupGroupId: snap.dedupGroupId,
         embeddingStatus: snap.embeddingStatus,
         embeddingModel: snap.embeddingModel,
         embedding: snap.embedding ? [...snap.embedding] : null,
@@ -71,6 +106,8 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
       .onConflictDoUpdate({
         target: jobPostings.id,
         set: {
+          status: snap.status,
+          dedupGroupId: snap.dedupGroupId,
           embeddingStatus: snap.embeddingStatus,
           embeddingModel: snap.embeddingModel,
           embedding: snap.embedding ? [...snap.embedding] : null,
@@ -97,11 +134,18 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
       id: asJobPostingId(row.id),
       userId: asUserId(row.userId),
       sourceConnectorKey: row.sourceConnectorKey,
+      externalId: row.externalId,
       url: row.url,
       urlHash: row.urlHash,
       company: row.company,
       title: row.title,
       descriptionMd: row.descriptionMd,
+      status: row.status,
+      location: row.location as JobPosting['location'],
+      remote: row.remote,
+      salary: row.salary as JobPosting['salary'],
+      postedAt: row.postedAt,
+      dedupGroupId: row.dedupGroupId,
       embeddingStatus: row.embeddingStatus,
       embeddingModel: row.embeddingModel,
       embedding: row.embedding ?? null,

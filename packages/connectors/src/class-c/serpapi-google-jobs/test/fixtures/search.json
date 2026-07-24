@@ -1,0 +1,49 @@
+{
+  "search_metadata": {
+    "id": "68700000000000000000000",
+    "status": "Success",
+    "google_jobs_url": "https://www.google.com/search?q=software+engineer&ibp=htl;jobs"
+  },
+  "search_parameters": {
+    "engine": "google_jobs",
+    "q": "software engineer",
+    "location": "United States"
+  },
+  "jobs_results": [
+    {
+      "title": "Senior Software Engineer, Backend",
+      "company_name": "Acme Corp",
+      "location": "Remote",
+      "via": "via LinkedIn",
+      "description": "Acme is looking for a Senior Software Engineer to join our backend platform team. You will design and operate distributed systems at scale, own service reliability, and mentor engineers.",
+      "extensions": ["3 days ago", "Full-time", "Health insurance"],
+      "detected_extensions": {
+        "posted_at": "3 days ago",
+        "schedule_type": "Full-time",
+        "salary": "$150,000–$190,000 a year"
+      },
+      "job_id": "eyJqb2JfdGl0bGUiOiJTZW5pb3IgU29mdHdhcmUgRW5naW5lZXIsIEJhY2tlbmQifQ==",
+      "share_link": "https://www.google.com/search?q=software+engineer&ibp=htl;jobs&htidocid=abc123",
+      "apply_options": [
+        { "title": "Apply on LinkedIn", "link": "https://www.linkedin.com/jobs/view/1111111111" }
+      ]
+    },
+    {
+      "title": "Software Engineer II",
+      "company_name": "Globex Inc",
+      "location": "Austin, TX",
+      "via": "via Indeed",
+      "description": "Globex is hiring a Software Engineer II to work on our payments platform in our Austin office.",
+      "extensions": ["1 day ago", "Full-time"],
+      "detected_extensions": {
+        "posted_at": "1 day ago",
+        "schedule_type": "Full-time"
+      },
+      "job_id": "eyJqb2JfdGl0bGUiOiJTb2Z0d2FyZSBFbmdpbmVlciBJSSJ9",
+      "share_link": "https://www.google.com/search?q=software+engineer&ibp=htl;jobs&htidocid=def456",
+      "apply_options": [
+        { "title": "Apply on Indeed", "link": "https://www.indeed.com/viewjob?jk=2222222222" }
+      ]
+    }
+  ]
+}

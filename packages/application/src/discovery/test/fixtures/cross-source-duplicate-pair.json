@@ -1,0 +1,21 @@
+{
+  "description": "A known duplicate pair for the SAME real-world job, as it would arrive from two different connector compliance classes (task 029 acceptance: 'must dedup a Class B/C job against the same job from a Class A source'). Used by ingest-job-batch.test.ts's cross-source dedup test.",
+  "classA": {
+    "sourceConnectorKey": "greenhouse",
+    "externalId": "gh-1",
+    "title": "Senior Backend Engineer",
+    "company": "Acme",
+    "url": "https://boards.greenhouse.io/acme/jobs/1",
+    "descriptionMd": "Own the ingestion pipeline.",
+    "remote": "remote"
+  },
+  "classB": {
+    "sourceConnectorKey": "capture",
+    "externalId": "capture-abc",
+    "title": "Senior Backend Engineer (Remote)",
+    "company": "Acme",
+    "url": "https://www.linkedin.com/jobs/view/999999999",
+    "descriptionMd": "Own the ingestion pipeline.",
+    "remote": "remote"
+  }
+}

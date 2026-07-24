@@ -9,6 +9,7 @@ import {
   DrizzleUserRepository,
   DrizzleJobPostingRepository,
   DrizzleApplicationRepository,
+  DrizzleConnectorConfigRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
   PostgresBudgetStore,
@@ -38,7 +39,9 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
     const conn = createDb(TEST_DATABASE_URL);
     db = conn.db;
     closeDb = conn.close;
-    await db.execute(sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, users RESTART IDENTITY CASCADE`);
+    await db.execute(
+      sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, ingestion_runs, connector_configs, users RESTART IDENTITY CASCADE`,
+    );
 
     redis = new IORedis(TEST_REDIS_URL, { maxRetriesPerRequest: null });
     await redis.flushdb();
@@ -52,6 +55,7 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
       users: new DrizzleUserRepository(db),
       jobPostings: new DrizzleJobPostingRepository(db),
       applications: new DrizzleApplicationRepository(db),
+      connectorConfigs: new DrizzleConnectorConfigRepository(db),
       hasher: new Argon2Hasher(),
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,

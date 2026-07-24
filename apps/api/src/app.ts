@@ -10,6 +10,7 @@ import type {
   JobPostingRepository,
   ApplicationRepository,
   HasherPort,
+  ConnectorConfigRepository,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
 import { registerAuthPlugin } from './plugins/auth.js';
@@ -21,6 +22,8 @@ import { registerApplicationRoutes } from './routes/applications.js';
 import { registerBoardRoutes } from './routes/board.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerCaptureRoutes } from './routes/capture.js';
+import { registerConnectorRoutes } from './routes/connectors.js';
 import { registerWsRoutes } from './routes/ws.js';
 import { ConnectionHub } from './ws/hub.js';
 
@@ -41,6 +44,7 @@ export interface AppDeps {
   outboxRelay: OutboxRelay;
   jobQueue: Queue;
   budgetStore: PostgresBudgetStore;
+  connectorConfigs: ConnectorConfigRepository;
   /** Fastify owns and creates the pino instance from this — false disables
    * logging entirely, which is what tests want (Fastify inject is noisy
    * otherwise). */
@@ -73,6 +77,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerApplicationRoutes(app, { uow: deps.uow });
   registerBoardRoutes(app, { applications: deps.applications, jobPostings: deps.jobPostings });
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
+  registerCaptureRoutes(app, { uow: deps.uow });
+  registerConnectorRoutes(app, { connectorConfigs: deps.connectorConfigs });
   registerWsRoutes(app, { hub });
 
   return app;

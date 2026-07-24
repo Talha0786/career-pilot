@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@careerpilot/application": "workspace:*",
+    "@careerpilot/connectors": "workspace:*",
     "@careerpilot/contracts": "workspace:*",
     "@careerpilot/domain": "workspace:*",
     "@careerpilot/infrastructure": "workspace:*",

@@ -239,3 +239,110 @@ describe('Email/JobUrl equality and stringification', () => {
     expect(String(u.value)).toBe('https://x.com/j');
   });
 });
+
+describe('JobPosting.ingest (task 027/028/029 — connector-sourced postings)', () => {
+  const validRaw = () => ({
+    userId: USER,
+    sourceConnectorKey: 'greenhouse',
+    externalId: 'gh-12345',
+    title: 'Staff Backend Engineer',
+    descriptionMd: 'Own the ingestion pipeline.',
+    company: 'Example Co',
+    url: 'https://boards.greenhouse.io/example/jobs/12345',
+    location: { raw: 'Remote, US' },
+    remote: 'remote' as const,
+    salary: { min: 150_000, max: 200_000, currency: 'USD', period: 'year' as const },
+    postedAt: new Date('2026-07-01T00:00:00.000Z'),
+  });
+
+  it('creates a posting with externalId, status active, and full normalized fields set', () => {
+    const r = JobPosting.ingest(validRaw());
+    if (!isOk(r)) throw new Error(`setup failed: ${JSON.stringify(r)}`);
+    const job = r.value;
+
+    expect(job.sourceConnectorKey).toBe('greenhouse');
+    expect(job.externalId).toBe('gh-12345');
+    expect(job.status).toBe('active');
+    expect(job.location).toEqual({ raw: 'Remote, US' });
+    expect(job.remote).toBe('remote');
+    expect(job.salary).toEqual({ min: 150_000, max: 200_000, currency: 'USD', period: 'year' });
+    expect(job.postedAt).toEqual(new Date('2026-07-01T00:00:00.000Z'));
+    expect(job.dedupGroupId).toBeNull();
+    expect(job.embeddingStatus).toBe('pending');
+  });
+
+  it('emits discovery.job_posted, same as createManual', () => {
+    const r = JobPosting.ingest(validRaw());
+    if (!isOk(r)) throw new Error('setup failed');
+    const events = r.value.pullEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]!.eventType).toBe('discovery.job_posted');
+  });
+
+  it.each([
+    ['externalId', { ...validRaw(), externalId: '' }],
+    ['sourceConnectorKey', { ...validRaw(), sourceConnectorKey: '' }],
+    ['title', { ...validRaw(), title: '' }],
+    ['descriptionMd', { ...validRaw(), descriptionMd: '' }],
+  ])('rejects a missing required field: %s', (_field, input) => {
+    expect(isErr(JobPosting.ingest(input))).toBe(true);
+  });
+
+  it('defaults remote/location/salary/postedAt when omitted', () => {
+    const r = JobPosting.ingest({
+      userId: USER,
+      sourceConnectorKey: 'rss',
+      externalId: 'rss-1',
+      title: 'Some Job',
+      descriptionMd: 'D',
+      company: 'Co',
+    });
+    if (!isOk(r)) throw new Error('setup failed');
+    expect(r.value.remote).toBe('unknown');
+    expect(r.value.location).toBeNull();
+    expect(r.value.salary).toBeNull();
+    expect(r.value.postedAt).toBeNull();
+  });
+
+  it('rejects an invalid URL the same way createManual does', () => {
+    const r = JobPosting.ingest({ ...validRaw(), url: 'javascript:alert(1)' });
+    expect(isErr(r)).toBe(true);
+  });
+});
+
+describe('JobPosting.createManual leaves the new M4 fields at safe defaults', () => {
+  it('externalId null, status active, remote unknown, dedupGroupId null', () => {
+    const r = JobPosting.createManual(validJob());
+    if (!isOk(r)) throw new Error('setup failed');
+    const job = r.value;
+    expect(job.externalId).toBeNull();
+    expect(job.status).toBe('active');
+    expect(job.remote).toBe('unknown');
+    expect(job.location).toBeNull();
+    expect(job.salary).toBeNull();
+    expect(job.postedAt).toBeNull();
+    expect(job.dedupGroupId).toBeNull();
+  });
+});
+
+describe('JobPosting dedup/status mutation methods', () => {
+  it('assignDedupGroup sets dedupGroupId and is idempotent for the same id', () => {
+    const r = JobPosting.createManual(validJob());
+    if (!isOk(r)) throw new Error('setup failed');
+    const job = r.value;
+    job.assignDedupGroup('018f0000-0000-7000-8000-00000000dedb');
+    expect(job.dedupGroupId).toBe('018f0000-0000-7000-8000-00000000dedb');
+    job.assignDedupGroup('018f0000-0000-7000-8000-00000000dedb');
+    expect(job.dedupGroupId).toBe('018f0000-0000-7000-8000-00000000dedb');
+  });
+
+  it('markClosed / markExpired transition status', () => {
+    const r = JobPosting.createManual(validJob());
+    if (!isOk(r)) throw new Error('setup failed');
+    const job = r.value;
+    job.markClosed();
+    expect(job.status).toBe('closed');
+    job.markExpired();
+    expect(job.status).toBe('expired');
+  });
+});
