@@ -14,6 +14,7 @@ import {
   OpenAiCompatibleLlmAdapter,
   DocumentTextExtractor,
   RedisDraftStore,
+  TieredCostEstimator,
 } from '@careerpilot/infrastructure';
 import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase } from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
@@ -43,16 +44,13 @@ const env = {
 
 const logger = pino({ level: env.logLevel });
 
-// Cost estimation is deliberately coarse for M2 — real per-provider pricing
-// tables are an M5 concern (ADR-006). This is enough to prove the budget
-// guard actually blocks dispatch, which is what M2 needs to prove.
-const estimator = {
-  estimateEmbedCostUsd: (req: { input: string }) => (req.input.length / 4) * 0.00001,
-  actualEmbedCostUsd: (_model: string, promptTokens: number) => promptTokens * 0.00001,
-  estimateCompleteCostUsd: (req: { prompt: string }) => (req.prompt.length / 4) * 0.00002,
-  actualCompleteCostUsd: (_model: string, promptTokens: number, completionTokens: number) =>
-    (promptTokens + completionTokens) * 0.00002,
-};
+// Task 033: real per-model pricing table, replacing the M2 coarse stub
+// (ADR-006 — "real per-provider pricing tables are an M5 concern"). Logs a
+// warning (via `logger`, wired below) rather than console.warn once the
+// logger exists; constructed after `logger` so we can pass it through.
+const estimator = new TieredCostEstimator(undefined, {
+  warn: (obj, msg) => logger.warn(obj, msg ?? 'cost-estimator warning'),
+});
 
 /** Composition root registers connectors — packages/connectors itself has no import-time side effects (README). */
 function buildConnectorRegistry(): ConnectorRegistry {
