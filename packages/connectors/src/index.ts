@@ -22,3 +22,4 @@ export type {
 } from '@careerpilot/application';
 export * from './class-a/index.js';
 export * from './class-b/index.js';
+export * from './class-c/index.js';
