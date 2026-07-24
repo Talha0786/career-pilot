@@ -8,6 +8,7 @@ import {
   DrizzleJobPostingRepository,
   DrizzleProfileRepository,
   DrizzleMatchScoreRepository,
+  DrizzleUserRepository,
   DrizzleConnectorConfigRepository,
   DrizzleIngestionRunRepository,
   DrizzleUnitOfWork,
@@ -21,7 +22,9 @@ import {
   TieredCostEstimator,
   FilePromptStore,
 } from '@careerpilot/infrastructure';
-import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase, MATCH_SCORE_QUEUE } from '@careerpilot/application';
+import {
+  GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase, MATCH_SCORE_QUEUE,
+} from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
 import {
   createGreenhouseConnector, createLeverConnector, createAshbyConnector,
@@ -30,6 +33,7 @@ import {
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
 import { createProfileFactsChangedWorker } from './handlers/profile-facts-changed.handler.js';
 import { createScoreMatchWorker } from './handlers/score-match.handler.js';
+import { createTailorDocumentWorker } from './handlers/tailor-document.handler.js';
 import {
   createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
   type RunConnectorIngestionPayload,
@@ -56,6 +60,12 @@ const env = {
   // a common local Ollama chat model; BYO cloud key path (ADR-006) would
   // override this to a stronger model for quality-sensitive routing.
   llmMatchModel: process.env.LLM_MATCH_MODEL ?? 'llama3.1',
+  // Task 039: the `large` tier per docs/06-agent-design.md §3 — tailoring
+  // is quality-sensitive (ADR-006's "BYO cloud key recommended for
+  // quality-critical tasks"); defaults to the same local model as matching
+  // so the system still boots key-free, but is the first thing worth
+  // overriding to a stronger BYO-key model in production.
+  llmTailorModel: process.env.LLM_TAILOR_MODEL ?? 'llama3.1',
   llmMonthlyBudgetUsd: Number(process.env.LLM_MONTHLY_BUDGET_USD ?? 10),
   outboxPollIntervalMs: Number(process.env.OUTBOX_POLL_INTERVAL_MS ?? 1000),
   outboxBatchSize: Number(process.env.OUTBOX_BATCH_SIZE ?? 50),
@@ -90,6 +100,7 @@ async function main(): Promise<void> {
   const profileWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const matchWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const matchQueueConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const tailorWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const resumeWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
@@ -153,6 +164,25 @@ async function main(): Promise<void> {
     prompts,
     model: env.llmMatchModel,
     logger,
+  });
+
+  // Task 039: resume/cover-letter tailoring — consumes
+  // tailoring.document_requested, enqueued by POST /documents/:id/tailor
+  // (apps/api/src/routes/documents.ts).
+  const users = new DrizzleUserRepository(db);
+  const tailorWorker = createTailorDocumentWorker({
+    connection: tailorWorkerConnection,
+    uow: new DrizzleUnitOfWork(db),
+    profiles,
+    jobPostings,
+    users,
+    llm: guardedLlm,
+    prompts,
+    model: env.llmTailorModel,
+    logger,
+    publishWsEvent: async (event) => {
+      await wsPublisher.publish('ws:document.tailored', JSON.stringify(event));
+    },
   });
 
   // Task 029: scheduler + ingestion pipeline. A connector run reuses the
@@ -219,6 +249,7 @@ async function main(): Promise<void> {
     await profileWorker.close();
     await matchWorker.close();
     await matchScoreQueue.close();
+    await tailorWorker.close();
     await connectorIngestionWorker.close();
     await connectorIngestionQueue.close();
     await resumeWorker.close();
@@ -227,6 +258,7 @@ async function main(): Promise<void> {
     await profileWorkerConnection.quit();
     await matchWorkerConnection.quit();
     await matchQueueConnection.quit();
+    await tailorWorkerConnection.quit();
     await resumeWorkerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();

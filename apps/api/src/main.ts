@@ -20,7 +20,7 @@ import {
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
-import type { JobEmbeddedEvent } from '@careerpilot/contracts';
+import type { JobEmbeddedEvent, DocumentTailoredEvent } from '@careerpilot/contracts';
 import { buildApp } from './app.js';
 
 const env = {
@@ -80,13 +80,22 @@ async function main(): Promise<void> {
   // Worker → Redis pub/sub → api → browser (M2 design §2). The worker
   // publishes here after every embed attempt (success or failure); this is
   // the only channel that fans job.embedded out to a live WebSocket.
-  await wsSubscriber.subscribe('ws:job.embedded');
-  wsSubscriber.on('message', (_channel, message) => {
+  await wsSubscriber.subscribe('ws:job.embedded', 'ws:document.tailored');
+  wsSubscriber.on('message', (channel, message) => {
     try {
-      const event = JSON.parse(message) as JobEmbeddedEvent & { userId: string };
-      app.hub.sendToUser(event.userId, { type: 'job.embedded', jobId: event.jobId, status: event.status });
+      if (channel === 'ws:job.embedded') {
+        const event = JSON.parse(message) as JobEmbeddedEvent & { userId: string };
+        app.hub.sendToUser(event.userId, { type: 'job.embedded', jobId: event.jobId, status: event.status });
+        return;
+      }
+      if (channel === 'ws:document.tailored') {
+        // Task 039 — worker publishes {userId, documentId, status}, same shape as job.embedded.
+        const event = JSON.parse(message) as DocumentTailoredEvent & { userId: string };
+        app.hub.sendToUser(event.userId, { type: 'document.tailored', documentId: event.documentId, status: event.status });
+        return;
+      }
     } catch (err) {
-      app.log.warn({ err }, 'discarded malformed ws:job.embedded message');
+      app.log.warn({ err, channel }, 'discarded malformed ws message');
     }
   });
 

@@ -3,6 +3,7 @@ import {
   CreateDocumentRequestSchema,
   AddDocumentVersionRequestSchema,
   RenderDocumentRequestSchema,
+  TailoringRequestSchema,
 } from '@careerpilot/contracts';
 import {
   makeListDocumentsUseCase,
@@ -11,9 +12,10 @@ import {
   makeGetDocumentUseCase,
   makeGetDocumentVersionUseCase,
   makeRenderDocumentUseCase,
+  makeRequestDocumentTailoringUseCase,
 } from '@careerpilot/application';
 import type {
-  UnitOfWork, DocumentRepository, ProfileRepository, DocumentRendererPort, ObjectStoragePort,
+  UnitOfWork, DocumentRepository, ProfileRepository, JobPostingRepository, DocumentRendererPort, ObjectStoragePort, QueuePort,
 } from '@careerpilot/application';
 import { sendDomainError, sendProblem } from '../lib/problem.js';
 import { requireAuth } from '../plugins/auth.js';
@@ -30,8 +32,10 @@ export function registerDocumentRoutes(
     uow: UnitOfWork;
     documents: DocumentRepository;
     profiles: ProfileRepository;
+    jobPostings: JobPostingRepository;
     renderer: DocumentRendererPort;
     storage: ObjectStoragePort;
+    queue: QueuePort;
   },
 ): void {
   const listDocuments = makeListDocumentsUseCase({ documents: deps.documents, profiles: deps.profiles });
@@ -40,6 +44,9 @@ export function registerDocumentRoutes(
   const getDocument = makeGetDocumentUseCase({ documents: deps.documents });
   const getDocumentVersion = makeGetDocumentVersionUseCase({ documents: deps.documents });
   const renderDocument = makeRenderDocumentUseCase({ uow: deps.uow, renderer: deps.renderer, storage: deps.storage });
+  const requestDocumentTailoring = makeRequestDocumentTailoringUseCase({
+    documents: deps.documents, profiles: deps.profiles, jobPostings: deps.jobPostings, queue: deps.queue,
+  });
 
   app.get('/documents', { preHandler: requireAuth }, async (request, reply) => {
     const result = await listDocuments(request.actor!);
@@ -80,6 +87,25 @@ export function registerDocumentRoutes(
     const result = await addDocumentVersion(request.actor!, { documentId: request.params.id, ...parsed.data });
     if (!result.ok) return sendDomainError(reply, result.error);
     return reply.code(201).send(result.value);
+  });
+
+  // Task 039: async because tailoring is a `large` model-tier call
+  // (docs/06-agent-design.md §3) — the client polls GET /documents/:id (a
+  // new version appears once tailoring finishes) or listens for the
+  // ws:document.tailored event (same WS pattern as job.embedded, M2 design
+  // §2), mirroring task 038's POST /profile/rescan's 202 shape.
+  app.post<{ Params: { id: string } }>('/documents/:id/tailor', { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = TailoringRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendProblem(reply, 400, { code: 'validation_failed', message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+    }
+
+    const result = await requestDocumentTailoring(request.actor!, {
+      documentId: request.params.id,
+      jobPostingId: parsed.data.jobPostingId,
+    });
+    if (!result.ok) return sendDomainError(reply, result.error);
+    return reply.code(202).send(result.value);
   });
 
   app.get<{ Params: { id: string; versionId: string } }>(

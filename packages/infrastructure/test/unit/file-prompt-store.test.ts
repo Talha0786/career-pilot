@@ -88,8 +88,10 @@ describe('FilePromptStore', () => {
     }
 
     for (const [task, schema] of [
-      ['tailor-resume', 'TailoringResultSchema'],
-      ['tailor-cover-letter', 'TailoringResultSchema'],
+      // Task 039 filled in real content for these two — output_schema names
+      // match the actual zod validators tailor-document.ts uses.
+      ['tailor-resume', 'TailorResumeOutputSchema'],
+      ['tailor-cover-letter', 'TailorCoverLetterOutputSchema'],
       ['verify-claims', 'ClaimAuditSchema'],
     ] as const) {
       const result = await store.load(task);

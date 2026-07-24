@@ -100,8 +100,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     uow: deps.uow,
     documents: deps.documents,
     profiles: deps.profiles,
+    jobPostings: deps.jobPostings,
     renderer: deps.renderer,
     storage: deps.storage,
+    queue: deps.queue,
   });
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
   registerCaptureRoutes(app, { uow: deps.uow });

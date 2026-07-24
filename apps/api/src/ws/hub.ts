@@ -1,5 +1,7 @@
 import type { WebSocket } from 'ws';
-import type { JobEmbeddedEvent } from '@careerpilot/contracts';
+import type { JobEmbeddedEvent, DocumentTailoredEvent } from '@careerpilot/contracts';
+
+type HubEvent = JobEmbeddedEvent | DocumentTailoredEvent;
 
 /**
  * In-process registry of live `/ws` connections, keyed by user id. Fine for
@@ -26,7 +28,7 @@ export class ConnectionHub {
   }
 
   /** Fans out ONLY to the owning user's connections — never a global broadcast. */
-  sendToUser(userId: string, event: JobEmbeddedEvent): void {
+  sendToUser(userId: string, event: HubEvent): void {
     const sockets = this.byUser.get(userId);
     if (!sockets) return;
     const payload = JSON.stringify(event);

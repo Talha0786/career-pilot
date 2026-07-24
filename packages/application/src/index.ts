@@ -38,3 +38,5 @@ export * from './documents/commands/render-document.js';
 export * from './matching/commands/score-match.js';
 export * from './matching/commands/request-match-scan.js';
 export * from './matching/queries/list-matches.js';
+export * from './tailoring/commands/tailor-document.js';
+export * from './tailoring/commands/request-document-tailoring.js';

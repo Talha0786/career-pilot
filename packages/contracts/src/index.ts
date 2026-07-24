@@ -8,3 +8,4 @@ export * from './profile.js';
 export * from './documents.js';
 export * from './facts.js';
 export * from './matching.js';
+export * from './tailoring.js';
