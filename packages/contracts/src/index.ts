@@ -6,3 +6,4 @@ export * from './capture.js';
 export * from './connectors.js';
 export * from './profile.js';
 export * from './documents.js';
+export * from './facts.js';

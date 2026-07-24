@@ -9,6 +9,7 @@ export * from './profile/user.js';
 export * from './profile/profile-section.js';
 export * from './profile/career-profile.js';
 export * from './profile/events.js';
+export * from './profile/fact-list.js';
 
 // Documents context
 export * from './documents/document-content.js';
