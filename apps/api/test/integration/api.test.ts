@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import IORedis from 'ioredis';
 import { Queue } from 'bullmq';
 import { sql } from 'drizzle-orm';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   createDb,
   type Db,
@@ -15,6 +18,8 @@ import {
   BullMqOutboxPublisher,
   BullMqQueuePort,
   RedisDraftStore,
+  DocumentRenderer,
+  LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
@@ -37,6 +42,7 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
   let redis: IORedis;
   let app: FastifyInstance;
   let jobQueue: Queue;
+  let storageDir: string;
 
   beforeEach(async () => {
     const conn = createDb(TEST_DATABASE_URL);
@@ -49,6 +55,7 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
     await redis.flushdb();
 
     jobQueue = new Queue('discovery.job_posted', { connection: redis });
+    storageDir = await mkdtemp(path.join(tmpdir(), 'careerpilot-documents-'));
 
     app = await buildApp({
       db,
@@ -61,6 +68,8 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
       documents: new DrizzleDocumentRepository(db),
       queue: new BullMqQueuePort(redis),
       drafts: new RedisDraftStore(redis),
+      renderer: new DocumentRenderer(),
+      storage: new LocalFileObjectStorage(storageDir),
       hasher: new Argon2Hasher(),
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,
@@ -75,6 +84,7 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
     await jobQueue.close();
     await redis.quit();
     await closeDb();
+    await rm(storageDir, { recursive: true, force: true });
   });
 
   async function registerAndLogin(email: string, password = 'correct horse battery staple') {
@@ -536,6 +546,112 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
       });
       expect(res.statusCode).toBe(400);
       expect(res.json().code).toBe('validation_failed');
+    });
+  });
+
+  describe('document rendering — render + download (task 024)', () => {
+    async function resumeContent(summary: string) {
+      return {
+        schemaVersion: 1, kind: 'resume',
+        contact: { name: 'Ada Lovelace', email: 'ada@example.com' },
+        summary, sections: [],
+      };
+    }
+
+    async function createDocWithVersion(cookie: string) {
+      const created = await app.inject({
+        method: 'POST', url: '/documents', headers: { cookie },
+        payload: { kind: 'resume', title: 'My Resume' },
+      });
+      const documentId = created.json().documentId as string;
+      const versionRes = await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions`, headers: { cookie },
+        payload: { source: 'imported', content: await resumeContent('v1') },
+      });
+      return { documentId, versionId: versionRes.json().versionId as string };
+    }
+
+    it('POST .../render produces a real PDF, downloadable via GET .../download', async () => {
+      const { cookie } = await registerAndLogin('render-pdf@test.com');
+      const { documentId, versionId } = await createDocWithVersion(cookie);
+
+      const renderRes = await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie },
+        payload: { format: 'pdf', template: 'classic' },
+      });
+      expect(renderRes.statusCode).toBe(200);
+      expect(renderRes.json().renderedKey).toBe(`documents/${documentId}/${versionId}.pdf`);
+
+      const downloadRes = await app.inject({
+        method: 'GET', url: `/documents/${documentId}/versions/${versionId}/download`, headers: { cookie },
+      });
+      expect(downloadRes.statusCode).toBe(200);
+      expect(downloadRes.headers['content-type']).toBe('application/pdf');
+      expect(downloadRes.rawPayload.subarray(0, 4).toString()).toBe('%PDF'); // a real PDF, not a stub
+    });
+
+    it('POST .../render produces a real DOCX (a real zip archive), downloadable via GET .../download', async () => {
+      const { cookie } = await registerAndLogin('render-docx@test.com');
+      const { documentId, versionId } = await createDocWithVersion(cookie);
+
+      await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie },
+        payload: { format: 'docx', template: 'modern' },
+      });
+
+      const downloadRes = await app.inject({
+        method: 'GET', url: `/documents/${documentId}/versions/${versionId}/download`, headers: { cookie },
+      });
+      expect(downloadRes.statusCode).toBe(200);
+      expect(downloadRes.headers['content-type']).toContain('wordprocessingml');
+      expect(downloadRes.rawPayload.subarray(0, 2).toString()).toBe('PK'); // DOCX is a zip archive
+    });
+
+    it('GET .../download is not_found before any render has happened', async () => {
+      const { cookie } = await registerAndLogin('render-notyet@test.com');
+      const { documentId, versionId } = await createDocWithVersion(cookie);
+
+      const res = await app.inject({ method: 'GET', url: `/documents/${documentId}/versions/${versionId}/download`, headers: { cookie } });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('a second render of the SAME version does not touch content/version — still append-only', async () => {
+      const { cookie } = await registerAndLogin('render-twice@test.com');
+      const { documentId, versionId } = await createDocWithVersion(cookie);
+
+      await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie },
+        payload: { format: 'pdf', template: 'classic' },
+      });
+      await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie },
+        payload: { format: 'docx', template: 'modern' },
+      });
+
+      const docRes = await app.inject({ method: 'GET', url: `/documents/${documentId}`, headers: { cookie } });
+      expect(docRes.json().versions).toHaveLength(1); // no new version was created by rendering
+      expect(docRes.json().versions[0].version).toBe(1);
+    });
+
+    it('never leaks another user\'s rendered document — cross-owner render/download are not_found', async () => {
+      const owner = await registerAndLogin('render-owner@test.com');
+      const { documentId, versionId } = await createDocWithVersion(owner.cookie);
+      await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie: owner.cookie },
+        payload: { format: 'pdf', template: 'classic' },
+      });
+
+      const intruder = await registerAndLogin('render-intruder@test.com');
+      const renderRes = await app.inject({
+        method: 'POST', url: `/documents/${documentId}/versions/${versionId}/render`, headers: { cookie: intruder.cookie },
+        payload: { format: 'pdf', template: 'classic' },
+      });
+      expect(renderRes.statusCode).toBe(404);
+
+      const downloadRes = await app.inject({
+        method: 'GET', url: `/documents/${documentId}/versions/${versionId}/download`, headers: { cookie: intruder.cookie },
+      });
+      expect(downloadRes.statusCode).toBe(404);
     });
   });
 

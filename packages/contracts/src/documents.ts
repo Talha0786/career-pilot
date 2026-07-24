@@ -119,3 +119,20 @@ export const ListDocumentsResponseSchema = z.object({
   items: z.array(DocumentListItemDtoSchema),
 });
 export type ListDocumentsResponse = z.infer<typeof ListDocumentsResponseSchema>;
+
+// --- Rendering (task 024) — exactly 2 templates, no speculative system ---
+export const RenderFormatSchema = z.enum(['pdf', 'docx']);
+export const RenderTemplateSchema = z.enum(['classic', 'modern']);
+
+export const RenderDocumentRequestSchema = z.object({
+  format: RenderFormatSchema,
+  template: RenderTemplateSchema,
+});
+export type RenderDocumentRequest = z.infer<typeof RenderDocumentRequestSchema>;
+
+export const RenderDocumentResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  versionId: z.string().uuid(),
+  renderedKey: z.string(),
+});
+export type RenderDocumentResponse = z.infer<typeof RenderDocumentResponseSchema>;

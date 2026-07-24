@@ -13,6 +13,8 @@ import {
   BullMqOutboxPublisher,
   BullMqQueuePort,
   RedisDraftStore,
+  DocumentRenderer,
+  LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
@@ -24,6 +26,7 @@ const env = {
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   port: Number(process.env.API_PORT ?? 8080),
   logLevel: process.env.LOG_LEVEL ?? 'info',
+  documentStorageDir: process.env.DOCUMENT_STORAGE_DIR ?? './data/documents',
 };
 
 const logger = pino({ level: env.logLevel });
@@ -45,6 +48,8 @@ async function main(): Promise<void> {
   const jobQueue = new Queue('discovery.job_posted', { connection: redis });
   const queue = new BullMqQueuePort(redis);
   const drafts = new RedisDraftStore(redis);
+  const renderer = new DocumentRenderer();
+  const storage = new LocalFileObjectStorage(env.documentStorageDir);
 
   const app = await buildApp({
     db,
@@ -57,6 +62,8 @@ async function main(): Promise<void> {
     documents,
     queue,
     drafts,
+    renderer,
+    storage,
     hasher,
     outboxRelay,
     jobQueue,

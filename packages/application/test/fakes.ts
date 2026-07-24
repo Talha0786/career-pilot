@@ -1,9 +1,11 @@
-import { ok, type Result } from '@careerpilot/domain';
+import { ok, type Result, type DocumentContent } from '@careerpilot/domain';
 import type {
   LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError,
 } from '../src/ports/llm.port.js';
 import type { BudgetStore, CostEstimator } from '../src/ports/budget-guard.js';
 import type { AiInvocationRecord } from '../src/ports/llm.port.js';
+import type { DocumentRendererPort, RenderFormat, RenderTemplate } from '../src/ports/document-renderer.port.js';
+import type { ObjectStoragePort } from '../src/ports/object-storage.port.js';
 
 /** Deterministic fake — no network, ever. The default in all unit tests. */
 export class FakeLlmPort implements LlmPort {
@@ -66,6 +68,24 @@ export class InMemoryBudgetStore implements BudgetStore {
     const run = prior.then(() => fn());
     this.locks.set(userId, run.catch(() => undefined));
     return run;
+  }
+}
+
+export class FakeDocumentRenderer implements DocumentRendererPort {
+  public calls: { content: DocumentContent; format: RenderFormat; template: RenderTemplate }[] = [];
+  async render(content: DocumentContent, format: RenderFormat, template: RenderTemplate): Promise<Buffer> {
+    this.calls.push({ content, format, template });
+    return Buffer.from(`fake-${format}-${template}-rendering`);
+  }
+}
+
+export class InMemoryObjectStorage implements ObjectStoragePort {
+  private files = new Map<string, Buffer>();
+  async put(key: string, bytes: Buffer): Promise<void> {
+    this.files.set(key, bytes);
+  }
+  async get(key: string): Promise<Buffer | null> {
+    return this.files.get(key) ?? null;
   }
 }
 
