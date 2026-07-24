@@ -90,6 +90,13 @@ export const AddDocumentVersionResponseSchema = z.object({
 });
 export type AddDocumentVersionResponse = z.infer<typeof AddDocumentVersionResponseSchema>;
 
+/** Task 040 — the flagged-claim shape attached to a needs-review version. */
+export const FlaggedClaimDtoSchema = z.object({
+  text: z.string(),
+  confidence: z.number().min(0).max(1),
+});
+export type FlaggedClaimDto = z.infer<typeof FlaggedClaimDtoSchema>;
+
 export const DocumentVersionDtoSchema = z.object({
   id: z.string().uuid(),
   version: z.number().int().min(1),
@@ -97,9 +104,25 @@ export const DocumentVersionDtoSchema = z.object({
   content: DocumentContentSchema,
   renderedPdfKey: z.string().nullable(),
   profileFactsHash: z.string().nullable(),
+  /** Task 040/041 — the mandatory human-review gate (docs/06-agent-design.md §4 point 4). */
+  needsHumanReview: z.boolean(),
+  flaggedClaims: z.array(FlaggedClaimDtoSchema).nullable(),
   createdAt: z.string().datetime(),
 });
 export type DocumentVersionDto = z.infer<typeof DocumentVersionDtoSchema>;
+
+/** Task 041 — the diff-review UI's review-submission payload. */
+export const ReviewDocumentVersionRequestSchema = z.object({
+  approved: z.boolean(),
+});
+export type ReviewDocumentVersionRequest = z.infer<typeof ReviewDocumentVersionRequestSchema>;
+
+export const ReviewDocumentVersionResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  versionId: z.string().uuid(),
+  needsHumanReview: z.boolean(),
+});
+export type ReviewDocumentVersionResponse = z.infer<typeof ReviewDocumentVersionResponseSchema>;
 
 export const DocumentDtoSchema = z.object({
   id: z.string().uuid(),

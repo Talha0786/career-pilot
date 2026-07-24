@@ -4,6 +4,7 @@ import {
   AddDocumentVersionRequestSchema,
   RenderDocumentRequestSchema,
   TailoringRequestSchema,
+  ReviewDocumentVersionRequestSchema,
 } from '@careerpilot/contracts';
 import {
   makeListDocumentsUseCase,
@@ -13,6 +14,7 @@ import {
   makeGetDocumentVersionUseCase,
   makeRenderDocumentUseCase,
   makeRequestDocumentTailoringUseCase,
+  makeReviewDocumentVersionUseCase,
 } from '@careerpilot/application';
 import type {
   UnitOfWork, DocumentRepository, ProfileRepository, JobPostingRepository, DocumentRendererPort, ObjectStoragePort, QueuePort,
@@ -47,6 +49,7 @@ export function registerDocumentRoutes(
   const requestDocumentTailoring = makeRequestDocumentTailoringUseCase({
     documents: deps.documents, profiles: deps.profiles, jobPostings: deps.jobPostings, queue: deps.queue,
   });
+  const reviewDocumentVersion = makeReviewDocumentVersionUseCase({ uow: deps.uow });
 
   app.get('/documents', { preHandler: requireAuth }, async (request, reply) => {
     const result = await listDocuments(request.actor!);
@@ -134,6 +137,32 @@ export function registerDocumentRoutes(
         documentId: request.params.id,
         versionId: request.params.versionId,
         ...parsed.data,
+      });
+      if (!result.ok) return sendDomainError(reply, result.error);
+      return reply.send(result.value);
+    },
+  );
+
+  // Task 041 — the diff-review UI's review-submission endpoint. Fetching
+  // the version's flaggedClaims + content-to-diff uses the EXISTING
+  // GET /documents/:id (now carries needsHumanReview/flaggedClaims per
+  // version, task 040) — no separate "fetch claim audit" endpoint needed;
+  // the client diffs the flagged version's content against the previous
+  // version's content itself (plain structural JSON diff, task 041's own
+  // scope note: no heavyweight text-diff library for this).
+  app.post<{ Params: { id: string; versionId: string } }>(
+    '/documents/:id/versions/:versionId/review',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const parsed = ReviewDocumentVersionRequestSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return sendProblem(reply, 400, { code: 'validation_failed', message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+      }
+
+      const result = await reviewDocumentVersion(request.actor!, {
+        documentId: request.params.id,
+        versionId: request.params.versionId,
+        approved: parsed.data.approved,
       });
       if (!result.ok) return sendDomainError(reply, result.error);
       return reply.send(result.value);

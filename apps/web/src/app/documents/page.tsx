@@ -150,6 +150,9 @@ function DocumentDetail({ documentId, onChanged }: { documentId: string; onChang
   const [error, setError] = useState<string | null>(null);
   const [addingVersion, setAddingVersion] = useState(false);
   const [renderingKey, setRenderingKey] = useState<string | null>(null);
+  const [jobPostingId, setJobPostingId] = useState('');
+  const [tailoring, setTailoring] = useState(false);
+  const [tailorMessage, setTailorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -176,11 +179,45 @@ function DocumentDetail({ documentId, onChanged }: { documentId: string; onChang
     }
   }
 
+  // Task 039's tailoring endpoint had no web trigger yet (039's file list
+  // was API/worker only) — added here, minimally, since task 041's own
+  // manual-verification instruction ("walk the golden path: generate ->
+  // review -> export") needs a way to reach "generate" from the browser at
+  // all. Async: the job runs in the worker (task 039); this just polls the
+  // document once after a short delay rather than a live WS subscription,
+  // to keep this addition small.
+  async function handleTailor(e: React.FormEvent) {
+    e.preventDefault();
+    setTailoring(true);
+    setTailorMessage(null);
+    setError(null);
+    try {
+      await documentsApi.tailor(documentId, { jobPostingId });
+      setTailorMessage('Tailoring started — this can take up to a minute. Refreshing…');
+      setTimeout(load, 8000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.problem.message : 'Could not start tailoring');
+    } finally {
+      setTailoring(false);
+    }
+  }
+
   if (error) return <Alert variant="danger">{error}</Alert>;
   if (!detail) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
     <div className="flex flex-col gap-3">
+      {(detail.kind === 'resume' || detail.kind === 'cover_letter') && (
+        <form onSubmit={handleTailor} className="flex flex-wrap items-end gap-2 rounded-md border border-neutral-200 bg-neutral-0 p-3">
+          <FormField label="Tailor against job posting ID" className="flex-1" hint="From the Board — copy a job's id">
+            <Input value={jobPostingId} onChange={(e) => setJobPostingId(e.target.value)} placeholder="job posting id" required />
+          </FormField>
+          <Button type="submit" size="sm" disabled={tailoring || !jobPostingId} loading={tailoring}>
+            Tailor with AI
+          </Button>
+          {tailorMessage && <p className="w-full text-xs text-neutral-500">{tailorMessage}</p>}
+        </form>
+      )}
       {detail.versions.length === 0 ? (
         <p className="text-sm text-neutral-500">No versions yet.</p>
       ) : (
@@ -190,7 +227,18 @@ function DocumentDetail({ documentId, onChanged }: { documentId: string; onChang
               <Badge variant="neutral">v{v.version}</Badge>
               <span className="text-neutral-500">{v.source}</span>
               <span className="text-neutral-400">{new Date(v.createdAt).toLocaleString()}</span>
-              {v.renderedPdfKey ? (
+              {v.needsHumanReview ? (
+                // Task 040/041's export-blocking gate, surfaced in the UI:
+                // no render button at all while a review is pending — the
+                // API itself also rejects it (render-document.ts), this is
+                // just not offering the disabled action in the first place.
+                <span className="ml-auto flex items-center gap-2">
+                  <Badge variant="danger">needs review</Badge>
+                  <a href={`/documents/${documentId}/review/${v.id}`} className="text-primary-600 hover:underline">
+                    Review flagged claims
+                  </a>
+                </span>
+              ) : v.renderedPdfKey ? (
                 <a
                   href={documentsApi.downloadUrl(documentId, v.id)}
                   className="ml-auto text-primary-600 hover:underline"
@@ -199,6 +247,11 @@ function DocumentDetail({ documentId, onChanged }: { documentId: string; onChang
                 </a>
               ) : (
                 <span className="ml-auto flex gap-2">
+                  {v.source === 'generated' && v.flaggedClaims && v.flaggedClaims.length > 0 && (
+                    <a href={`/documents/${documentId}/review/${v.id}`} className="self-center text-xs text-neutral-500 hover:underline">
+                      view review history
+                    </a>
+                  )}
                   <Button
                     size="sm" variant="outline"
                     disabled={renderingKey === `${v.id}:pdf`}

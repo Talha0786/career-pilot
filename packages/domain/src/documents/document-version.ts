@@ -138,6 +138,31 @@ export class DocumentVersion {
     );
   }
 
+  /**
+   * Task 041 — a human resolved the pending review (accepted the flagged
+   * claims as fine, or edited the content elsewhere and is re-confirming).
+   * Returns a NEW instance with `needsHumanReview` cleared — same
+   * "legitimate post-hoc field, not a content mutation" posture as
+   * `withRenderedPdfKey`. `flaggedClaims` is kept (not nulled out) as the
+   * historical record of what was flagged and resolved, not just what's
+   * currently pending.
+   */
+  withReviewResolved(): DocumentVersion {
+    return new DocumentVersion(
+      this.id,
+      this.documentId,
+      this.version,
+      this.source,
+      this.content,
+      this.renderedPdfKey,
+      this.generationJobId,
+      this.profileFactsHash,
+      false,
+      this.flaggedClaims,
+      this.createdAt,
+    );
+  }
+
   /** Stale relative to a profile whose current facts hash differs (or is unknown). */
   isStaleAgainst(currentProfileFactsHash: string): boolean {
     return this.profileFactsHash !== null && this.profileFactsHash !== currentProfileFactsHash;

@@ -1,4 +1,4 @@
-import { asDocumentId, notFound, type Document, type DocumentVersion, type Result, type DomainError } from '@careerpilot/domain';
+import { asDocumentId, notFound, type Document, type DocumentVersion, type FlaggedClaim, type Result, type DomainError } from '@careerpilot/domain';
 import type { DocumentRepository, Actor } from '../../ports/repositories.js';
 
 export interface DocumentVersionSummary {
@@ -8,6 +8,9 @@ export interface DocumentVersionSummary {
   content: unknown;
   renderedPdfKey: string | null;
   profileFactsHash: string | null;
+  /** Task 040/041 — the mandatory human-review gate. */
+  needsHumanReview: boolean;
+  flaggedClaims: readonly FlaggedClaim[] | null;
   createdAt: string;
 }
 export interface DocumentSummary {
@@ -28,6 +31,8 @@ function toVersionSummary(v: DocumentVersion): DocumentVersionSummary {
     content: v.content,
     renderedPdfKey: v.renderedPdfKey,
     profileFactsHash: v.profileFactsHash,
+    needsHumanReview: v.needsHumanReview,
+    flaggedClaims: v.flaggedClaims,
     createdAt: v.createdAt.toISOString(),
   };
 }

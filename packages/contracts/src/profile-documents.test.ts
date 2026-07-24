@@ -9,6 +9,7 @@ import {
   AddDocumentVersionRequestSchema,
   DocumentContentSchema,
   DocumentDtoSchema,
+  DocumentVersionDtoSchema,
 } from './documents.js';
 
 describe('profile contracts', () => {
@@ -106,10 +107,33 @@ describe('document contracts', () => {
           },
           renderedPdfKey: null,
           profileFactsHash: null,
+          needsHumanReview: false,
+          flaggedClaims: null,
           createdAt: new Date().toISOString(),
         },
       ],
     };
     expect(DocumentDtoSchema.safeParse(dto).success).toBe(true);
+  });
+
+  it('DocumentVersionDto round-trips a needs-review payload with flaggedClaims (task 040/041)', () => {
+    const dto = {
+      id: crypto.randomUUID(),
+      version: 2,
+      source: 'generated',
+      content: {
+        schemaVersion: 1,
+        kind: 'resume',
+        contact: { name: 'Ada', email: 'ada@example.com' },
+        summary: null,
+        sections: [],
+      },
+      renderedPdfKey: null,
+      profileFactsHash: 'abc123',
+      needsHumanReview: true,
+      flaggedClaims: [{ text: 'Led a team of 12', confidence: 0.1 }],
+      createdAt: new Date().toISOString(),
+    };
+    expect(DocumentVersionDtoSchema.safeParse(dto).success).toBe(true);
   });
 });

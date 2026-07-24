@@ -38,6 +38,13 @@ COPY packages/contracts ./packages/contracts
 COPY packages/infrastructure ./packages/infrastructure
 COPY packages/connectors ./packages/connectors
 COPY apps/api ./apps/api
+# Task 024's LocalFileObjectStorage default (DOCUMENT_STORAGE_DIR=./data/documents,
+# relative to WORKDIR) creates this directory lazily on first render/export —
+# found via task 041's manual browser verification: the `careerpilot` user
+# has no write access to /app/apps/api (owned by root from the COPY above),
+# so the first real export inside this image failed with EACCES. Pre-create
+# and chown it here rather than requiring the app to run as root.
+RUN mkdir -p /app/apps/api/data/documents && chown -R careerpilot:careerpilot /app/apps/api/data
 USER careerpilot
 WORKDIR /app/apps/api
 EXPOSE 8080

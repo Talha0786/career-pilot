@@ -169,6 +169,37 @@ export class Document extends AggregateRoot {
     return ok(undefined);
   }
 
+  /**
+   * Task 041 — resolves a pending human review of a `needsHumanReview:true`
+   * version (task 040's gate). `approved: true` clears the flag and unblocks
+   * export (`DocumentVersion.isExportable()`); `approved: false` records
+   * that a human looked at it and confirmed it's NOT fine — the version
+   * stays blocked (the caller is expected to regenerate via the tailoring
+   * pipeline, task 039, not edit around the flag). Either outcome requires
+   * a version that actually HAS a pending review — resolving a version
+   * that was never flagged, or is already resolved, is a `conflict`, not a
+   * silent no-op.
+   */
+  resolveReview(versionId: string, approved: boolean): Result<DocumentVersion, DomainError> {
+    const idx = this._versions.findIndex((v) => v.id === versionId);
+    if (idx === -1) return err(notFound('Document version not found'));
+
+    const version = this._versions[idx]!;
+    if (!version.needsHumanReview) {
+      return err(conflict('This version has no pending review to resolve'));
+    }
+
+    if (!approved) {
+      // Explicitly rejected — no state change, but a real, intentional
+      // outcome (not an accidental no-op): the version stays blocked.
+      return ok(version);
+    }
+
+    const resolved = version.withReviewResolved();
+    this._versions[idx] = resolved;
+    return ok(resolved);
+  }
+
   rename(title: string): Result<void, DomainError> {
     const t = title.trim();
     if (t.length === 0) return err(validationFailed('Title is required', { title: 'required' }));

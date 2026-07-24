@@ -8,6 +8,10 @@ import type {
   AddDocumentVersionResponse,
   RenderDocumentRequest,
   RenderDocumentResponse,
+  TailoringRequest,
+  TailorDocumentResponse,
+  ReviewDocumentVersionRequest,
+  ReviewDocumentVersionResponse,
 } from '@careerpilot/contracts';
 import { request } from '../api-client.js';
 
@@ -28,6 +32,17 @@ export const documentsApi = {
 
   render: (id: string, versionId: string, body: RenderDocumentRequest) =>
     request<RenderDocumentResponse>(`/documents/${id}/versions/${versionId}/render`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  /** Task 039 — kicks off the async tailoring pipeline (202, poll GET/ws for the new version). */
+  tailor: (id: string, body: TailoringRequest) =>
+    request<TailorDocumentResponse>(`/documents/${id}/tailor`, { method: 'POST', body: JSON.stringify(body) }),
+
+  /** Task 041 — resolves a pending needsHumanReview:true version. */
+  review: (id: string, versionId: string, body: ReviewDocumentVersionRequest) =>
+    request<ReviewDocumentVersionResponse>(`/documents/${id}/versions/${versionId}/review`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
