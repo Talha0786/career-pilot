@@ -59,6 +59,20 @@ export interface JobPostingRepository {
    * the use case just runs unlocked, same as before.
    */
   withJobPostingLock?<T>(jobPostingId: string, fn: () => Promise<T>): Promise<T>;
+  /**
+   * Task 036: the embedding prefilter (docs/06-agent-design.md §3 — "embedding
+   * prefilter caps volume" before the LLM rubric-scoring pass, task 038).
+   * Returns job postings ordered by ASCENDING cosine distance to `embedding`
+   * (nearest/most-similar first), backed by the HNSW index (migration
+   * 0004_ann_index.sql). Only postings that already have an embedding are
+   * eligible — a NULL `embedding` column can never match an ANN query.
+   * `excludeStatuses` lets callers skip e.g. `closed`/`expired` postings
+   * without a separate filter pass.
+   */
+  findNearestByEmbedding(
+    embedding: readonly number[],
+    opts: { limit: number; excludeStatuses?: readonly string[] },
+  ): Promise<JobPosting[]>;
 }
 
 // ── M4 (task 027): connector configuration + ingestion history ────────────
