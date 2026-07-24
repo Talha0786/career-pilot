@@ -57,5 +57,16 @@ Every task file (`NNN.md`) has exactly these sections:
 | [030](030.md) | Class B: capture ingest endpoint | M4 | DONE |
 | [031](031.md) | Class C reference adapter: SerpApi Google Jobs (BYO key) | M4 | DONE (fixture-verified; live canary pending `SERPAPI_KEY`) |
 | [032](032.md) | Connector health + chaos test | M4 | DONE |
+| [033](033.md) | Real CostEstimator (per-model pricing table) | M5 | TODO |
+| [034](034.md) | Prompt file convention + PromptStore loader | M5 | TODO |
+| [035](035.md) | Profile embedding use case | M5 | TODO |
+| [036](036.md) | pgvector ANN index + nearest-neighbor query | M5 | TODO |
+| [037](037.md) | Numbered fact-list compilation from CareerProfile | M5 | TODO |
+| [038](038.md) | Match rubric scoring pipeline | M5 | TODO |
+| [039](039.md) | Resume/cover-letter tailoring pipeline | M5 | TODO |
+| [040](040.md) | Claim verification pass (anti-hallucination gate) | M5 | TODO |
+| [041](041.md) | Diff-review UI (web) | M5 | TODO |
+| [042](042.md) | Intelligence eval harness (nightly CI gate) | M5 | TODO |
+| [043](043.md) | Budget hard-stop proof (chaos/integration test) | M5 | TODO |
 
-M3 (019-025) and M4 (026-032) run as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. Milestones beyond M4 get tasks when their design is approved — not before. Speculative tasks rot.
+M3 (019-025) and M4 (026-032) ran as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. M5 (033-043) is a single sequential track: unlike M3/M4, every stage feeds the next (embeddings → prefilter → rubric scoring → tailoring → claim verification → eval harness → budget proof), so there is no clean parallel split. Milestones beyond M5 get tasks when their design is approved — not before. Speculative tasks rot.
