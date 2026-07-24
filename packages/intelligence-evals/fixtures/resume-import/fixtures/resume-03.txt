@@ -1,0 +1,26 @@
+Priya Natarajan
+priya.n@example.org
+650-555-2211
+
+Work Experience
+Junior Developer, Bright Software
+2015 - 2018
+- Wrote unit tests for the checkout module
+- Fixed over 100 customer-reported bugs
+
+Developer, Bright Software
+2018 - 2021
+- Designed the internal feature-flag service
+- Onboarded 5 new hires
+
+Staff Developer, Bright Software
+2021 - Present
+- Set engineering standards for the platform team
+- Ran the quarterly architecture review
+
+Certifications
+AWS Certified Solutions Architect - Amazon Web Services
+Certified Kubernetes Administrator - The Linux Foundation
+
+Skills
+Java; Spring Boot; AWS; Terraform; MySQL; Redis

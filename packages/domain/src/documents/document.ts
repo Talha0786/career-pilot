@@ -2,7 +2,7 @@ import { AggregateRoot, createEvent } from '../shared/domain-event.js';
 import { type DocumentId, type UserId, newDocumentId } from '../shared/ids.js';
 import { type Result, ok, err } from '../shared/result.js';
 import { type DomainError, validationFailed, forbidden, notFound, conflict } from '../shared/errors.js';
-import { DocumentVersion, type DocumentVersionSnapshot, type DocumentVersionSource } from './document-version.js';
+import { DocumentVersion, type DocumentVersionSnapshot, type DocumentVersionSource, type FlaggedClaim } from './document-version.js';
 import { type DocumentContent } from './document-content.js';
 
 export type DocumentKind = 'resume' | 'cover_letter' | 'other';
@@ -110,6 +110,9 @@ export class Document extends AggregateRoot {
     content: DocumentContent;
     generationJobId?: string | undefined;
     profileFactsHash?: string | undefined;
+    /** Task 040 — see DocumentVersion's doc comment. */
+    needsHumanReview?: boolean | undefined;
+    flaggedClaims?: readonly FlaggedClaim[] | null | undefined;
     now?: Date | undefined;
   }): Result<DocumentVersion, DomainError> {
     if (this._deletedAt !== null) {
@@ -131,6 +134,8 @@ export class Document extends AggregateRoot {
       content: args.content,
       generationJobId: args.generationJobId,
       profileFactsHash: args.profileFactsHash,
+      needsHumanReview: args.needsHumanReview,
+      flaggedClaims: args.flaggedClaims,
       now: args.now,
     });
 
@@ -162,6 +167,37 @@ export class Document extends AggregateRoot {
     if (idx === -1) return err(notFound('Document version not found'));
     this._versions[idx] = this._versions[idx]!.withRenderedPdfKey(renderedPdfKey);
     return ok(undefined);
+  }
+
+  /**
+   * Task 041 — resolves a pending human review of a `needsHumanReview:true`
+   * version (task 040's gate). `approved: true` clears the flag and unblocks
+   * export (`DocumentVersion.isExportable()`); `approved: false` records
+   * that a human looked at it and confirmed it's NOT fine — the version
+   * stays blocked (the caller is expected to regenerate via the tailoring
+   * pipeline, task 039, not edit around the flag). Either outcome requires
+   * a version that actually HAS a pending review — resolving a version
+   * that was never flagged, or is already resolved, is a `conflict`, not a
+   * silent no-op.
+   */
+  resolveReview(versionId: string, approved: boolean): Result<DocumentVersion, DomainError> {
+    const idx = this._versions.findIndex((v) => v.id === versionId);
+    if (idx === -1) return err(notFound('Document version not found'));
+
+    const version = this._versions[idx]!;
+    if (!version.needsHumanReview) {
+      return err(conflict('This version has no pending review to resolve'));
+    }
+
+    if (!approved) {
+      // Explicitly rejected — no state change, but a real, intentional
+      // outcome (not an accidental no-op): the version stays blocked.
+      return ok(version);
+    }
+
+    const resolved = version.withReviewResolved();
+    this._versions[idx] = resolved;
+    return ok(resolved);
   }
 
   rename(title: string): Result<void, DomainError> {

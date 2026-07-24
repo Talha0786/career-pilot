@@ -1,4 +1,4 @@
-import { eq, and, lt, desc, sql } from 'drizzle-orm';
+import { eq, and, lt, desc, sql, isNotNull, notInArray } from 'drizzle-orm';
 import { JobPosting, asUserId, asJobPostingId } from '@careerpilot/domain';
 import type { JobPostingRepository, DedupCandidate } from '@careerpilot/application';
 import type { Db } from '../client.js';
@@ -113,6 +113,37 @@ export class DrizzleJobPostingRepository implements JobPostingRepository {
           embedding: snap.embedding ? [...snap.embedding] : null,
         },
       });
+  }
+
+  /**
+   * Task 036: ANN prefilter backing `MatchScoreRepository`'s embedding step
+   * (docs/06-agent-design.md §3). `<=>` is pgvector's cosine-distance
+   * operator — ascending order puts the nearest (most similar) postings
+   * first, which the HNSW index (migration 0004) makes an index scan rather
+   * than a sequential one. `embedding` is passed as its pgvector text
+   * literal (`[v1,v2,...]`) and cast with `::vector` — same driver format
+   * the `vector` customType's `toDriver` already uses (schema/index.ts), so
+   * this stays consistent with how every other embedding write in the
+   * codebase serializes a vector.
+   */
+  async findNearestByEmbedding(
+    embedding: readonly number[],
+    opts: { limit: number; excludeStatuses?: readonly string[] },
+  ): Promise<JobPosting[]> {
+    const vectorLiteral = `[${embedding.join(',')}]`;
+    const conditions = [isNotNull(jobPostings.embedding)];
+    if (opts.excludeStatuses && opts.excludeStatuses.length > 0) {
+      conditions.push(notInArray(jobPostings.status, [...opts.excludeStatuses] as JobPosting['status'][]));
+    }
+
+    const rows = await this.db
+      .select()
+      .from(jobPostings)
+      .where(and(...conditions))
+      .orderBy(sql`${jobPostings.embedding} <=> ${vectorLiteral}::vector`)
+      .limit(opts.limit);
+
+    return rows.map((r) => this.toDomain(r));
   }
 
   /**

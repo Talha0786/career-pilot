@@ -321,6 +321,31 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  packages/intelligence-evals:
+    dependencies:
+      '@careerpilot/application':
+        specifier: workspace:*
+        version: link:../application
+      '@careerpilot/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@careerpilot/infrastructure':
+        specifier: workspace:*
+        version: link:../infrastructure
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/ui:
     dependencies:
       '@radix-ui/react-avatar':

@@ -1,12 +1,12 @@
 import type {
-  User, JobPosting, Application, CareerProfile, Document,
+  User, JobPosting, Application, CareerProfile, Document, MatchScore,
   UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId,
 } from '@careerpilot/domain';
 import type {
   UserRepository, JobPostingRepository, ApplicationRepository,
   OutboxPort, UnitOfWork, TransactionContext, HasherPort, DedupCandidate,
   ConnectorConfigRepository, ConnectorConfig, IngestionRunRepository, IngestionRun, IngestionRunStats,
-  ProfileRepository, DocumentRepository,
+  ProfileRepository, DocumentRepository, MatchScoreRepository,
 } from '../src/ports/repositories.js';
 import { DEGRADED_AFTER_CONSECUTIVE_FAILURES, DISABLED_AFTER_CONSECUTIVE_FAILURES } from '../src/discovery/commands/update-connector-health.js';
 import type { AuditPort, AuditRecord } from '../src/ports/audit.port.js';
@@ -60,6 +60,40 @@ export class FakeJobPostingRepository implements JobPostingRepository {
   async save(job: JobPosting): Promise<void> {
     this.byId.set(job.id, job);
   }
+
+  /**
+   * In-memory equivalent of the real `<=>` cosine-distance ANN query (task
+   * 036) — plain JS cosine similarity, sorted ascending by distance
+   * (1 - similarity), same ordering contract as the real Postgres/pgvector
+   * implementation. Fine for application-layer unit tests at fixture scale;
+   * the real ordering guarantee is proven against actual pgvector in
+   * `packages/infrastructure/test/integration/ann-prefilter.test.ts`.
+   */
+  async findNearestByEmbedding(
+    embedding: readonly number[],
+    opts: { limit: number; excludeStatuses?: readonly string[] },
+  ): Promise<JobPosting[]> {
+    const excluded = new Set(opts.excludeStatuses ?? []);
+    return [...this.byId.values()]
+      .filter((j) => j.embedding !== null && !excluded.has(j.status))
+      .map((j) => ({ job: j, distance: cosineDistance(embedding, j.embedding!) }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, opts.limit)
+      .map((r) => r.job);
+  }
+}
+
+function cosineDistance(a: readonly number[], b: readonly number[]): number {
+  const len = Math.min(a.length, b.length);
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < len; i++) {
+    dot += a[i]! * b[i]!;
+    normA += a[i]! * a[i]!;
+    normB += b[i]! * b[i]!;
+  }
+  if (normA === 0 || normB === 0) return 1; // maximally dissimilar, avoid div-by-zero
+  const similarity = dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  return 1 - similarity;
 }
 
 export class FakeApplicationRepository implements ApplicationRepository {
@@ -90,6 +124,28 @@ export class FakeProfileRepository implements ProfileRepository {
   }
   async save(profile: CareerProfile): Promise<void> {
     this.byId.set(profile.id, profile);
+  }
+}
+
+export class FakeMatchScoreRepository implements MatchScoreRepository {
+  private byKey = new Map<string, MatchScore>();
+  public saveCount = 0;
+
+  private key(profileId: string, jobPostingId: string): string {
+    return `${profileId}::${jobPostingId}`;
+  }
+
+  async findByProfileAndJob(profileId: CareerProfileId, jobPostingId: JobPostingId): Promise<MatchScore | null> {
+    return this.byKey.get(this.key(profileId, jobPostingId)) ?? null;
+  }
+  async listForProfile(profileId: CareerProfileId, opts?: { limit?: number }): Promise<MatchScore[]> {
+    const all = [...this.byKey.values()].filter((s) => s.profileId === profileId);
+    return opts?.limit ? all.slice(0, opts.limit) : all;
+  }
+  /** Upsert-on-recompute, same contract as DrizzleMatchScoreRepository. */
+  async save(score: MatchScore): Promise<void> {
+    this.saveCount += 1;
+    this.byKey.set(this.key(score.profileId, score.jobPostingId), score);
   }
 }
 

@@ -1,0 +1,25 @@
+Jane Smith
+jane.smith@example.com
+(555) 123-4567
+
+Summary
+Backend engineer with 8 years of experience building distributed systems in Go and TypeScript.
+
+Experience
+Senior Software Engineer at Acme Corp
+Jan 2020 - Present
+- Led migration of the payments service to a event-driven architecture
+- Reduced p99 latency by 40% through query optimization
+- Mentored three junior engineers
+
+Software Engineer at Initech
+Jun 2016 - Dec 2019
+- Built the internal reporting dashboard used by 200+ employees
+- Owned the on-call rotation for the billing subsystem
+
+Education
+State University, B.S. Computer Science
+Aug 2012 - May 2016
+
+Skills
+Go, TypeScript, PostgreSQL, Kubernetes, gRPC, Kafka

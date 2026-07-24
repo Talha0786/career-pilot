@@ -8,6 +8,8 @@ export * from './shared/domain-event.js';
 export * from './profile/user.js';
 export * from './profile/profile-section.js';
 export * from './profile/career-profile.js';
+export * from './profile/events.js';
+export * from './profile/fact-list.js';
 
 // Documents context
 export * from './documents/document-content.js';
@@ -23,3 +25,6 @@ export * from './discovery/events.js';
 export * from './pipeline/stage.js';
 export * from './pipeline/application.js';
 export * from './pipeline/events.js';
+
+// Matching context
+export * from './matching/match-score.js';

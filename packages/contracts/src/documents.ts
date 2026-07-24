@@ -13,11 +13,18 @@ const ContactSchema = z.object({
   links: z.array(z.string().url()).max(10).optional(),
 });
 
+/** Task 039 — see ResumeEntry.bulletFacts's doc comment in packages/domain/src/documents/document-content.ts. */
+export const SupportedTextSchema = z.object({
+  text: z.string().max(4000),
+  supportingFactIds: z.array(z.string()),
+});
+
 export const ResumeEntrySchema = z.object({
   title: z.string().max(200),
   subtitle: z.string().max(200),
   dateRange: z.string().max(100).nullable(),
   bullets: z.array(z.string().max(1000)).max(50),
+  bulletFacts: z.array(SupportedTextSchema).max(50).optional(),
 });
 export const ResumeSectionSchema = z.object({
   heading: z.string().max(200),
@@ -38,6 +45,7 @@ export const CoverLetterDocumentContentSchema = z.object({
   recipient: z.string().max(200).nullable(),
   salutation: z.string().max(200),
   bodyParagraphs: z.array(z.string().max(4000)).max(20),
+  paragraphFacts: z.array(SupportedTextSchema).max(20).optional(),
   closing: z.string().max(200),
 });
 
@@ -82,6 +90,13 @@ export const AddDocumentVersionResponseSchema = z.object({
 });
 export type AddDocumentVersionResponse = z.infer<typeof AddDocumentVersionResponseSchema>;
 
+/** Task 040 — the flagged-claim shape attached to a needs-review version. */
+export const FlaggedClaimDtoSchema = z.object({
+  text: z.string(),
+  confidence: z.number().min(0).max(1),
+});
+export type FlaggedClaimDto = z.infer<typeof FlaggedClaimDtoSchema>;
+
 export const DocumentVersionDtoSchema = z.object({
   id: z.string().uuid(),
   version: z.number().int().min(1),
@@ -89,9 +104,25 @@ export const DocumentVersionDtoSchema = z.object({
   content: DocumentContentSchema,
   renderedPdfKey: z.string().nullable(),
   profileFactsHash: z.string().nullable(),
+  /** Task 040/041 — the mandatory human-review gate (docs/06-agent-design.md §4 point 4). */
+  needsHumanReview: z.boolean(),
+  flaggedClaims: z.array(FlaggedClaimDtoSchema).nullable(),
   createdAt: z.string().datetime(),
 });
 export type DocumentVersionDto = z.infer<typeof DocumentVersionDtoSchema>;
+
+/** Task 041 — the diff-review UI's review-submission payload. */
+export const ReviewDocumentVersionRequestSchema = z.object({
+  approved: z.boolean(),
+});
+export type ReviewDocumentVersionRequest = z.infer<typeof ReviewDocumentVersionRequestSchema>;
+
+export const ReviewDocumentVersionResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  versionId: z.string().uuid(),
+  needsHumanReview: z.boolean(),
+});
+export type ReviewDocumentVersionResponse = z.infer<typeof ReviewDocumentVersionResponseSchema>;
 
 export const DocumentDtoSchema = z.object({
   id: z.string().uuid(),

@@ -1,5 +1,5 @@
 import type {
-  User, JobPosting, Application, CareerProfile, Document,
+  User, JobPosting, Application, CareerProfile, Document, MatchScore,
   UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId,
 } from '@careerpilot/domain';
 import type { AuditPort } from './audit.port.js';
@@ -59,6 +59,20 @@ export interface JobPostingRepository {
    * the use case just runs unlocked, same as before.
    */
   withJobPostingLock?<T>(jobPostingId: string, fn: () => Promise<T>): Promise<T>;
+  /**
+   * Task 036: the embedding prefilter (docs/06-agent-design.md §3 — "embedding
+   * prefilter caps volume" before the LLM rubric-scoring pass, task 038).
+   * Returns job postings ordered by ASCENDING cosine distance to `embedding`
+   * (nearest/most-similar first), backed by the HNSW index (migration
+   * 0004_ann_index.sql). Only postings that already have an embedding are
+   * eligible — a NULL `embedding` column can never match an ANN query.
+   * `excludeStatuses` lets callers skip e.g. `closed`/`expired` postings
+   * without a separate filter pass.
+   */
+  findNearestByEmbedding(
+    embedding: readonly number[],
+    opts: { limit: number; excludeStatuses?: readonly string[] },
+  ): Promise<JobPosting[]>;
 }
 
 // ── M4 (task 027): connector configuration + ingestion history ────────────
@@ -163,6 +177,23 @@ export interface DocumentRepository {
   /** Excludes soft-deleted documents unless `includeDeleted` is set. */
   listForUser(userId: UserId, opts?: { includeDeleted?: boolean }): Promise<Document[]>;
   save(document: Document): Promise<void>;
+}
+
+/**
+ * Task 038. Unique on `(profile_id, job_posting_id)` — `save` is
+ * upsert-on-recompute (a rescan REPLACES the row, it does not append a new
+ * one). Deliberately simpler than `docs/02-database-design.md`'s original
+ * `match_scores` sketch (unique on `(job_posting_id, profile_id, method)`,
+ * append-many, "latest wins by created_at") — this milestone only ever
+ * produces one scoring method (`rubric_llm` via the LLM pass), so a second
+ * dimension purely to support a method this system doesn't yet compute
+ * would be speculative complexity. Documented here as a deliberate,
+ * scoped-down deviation from the design doc, not a silent drift.
+ */
+export interface MatchScoreRepository {
+  findByProfileAndJob(profileId: CareerProfileId, jobPostingId: JobPostingId): Promise<MatchScore | null>;
+  listForProfile(profileId: CareerProfileId, opts?: { limit?: number }): Promise<MatchScore[]>;
+  save(score: MatchScore): Promise<void>;
 }
 
 /** Emitted by aggregates, drained by repositories, written to the outbox (ADR-007). */

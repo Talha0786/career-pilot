@@ -1,0 +1,23 @@
+{
+  "id": "resume-07",
+  "notes": "All-caps three-word name, employer name containing '&' and the word 'at' as part of a compound org name.",
+  "fields": {
+    "contact.name": "JOHN MICHAEL DOE",
+    "contact.email": "johndoe@example.com",
+    "contact.phone": "777-222-3344",
+    "summary.present": true,
+    "experience.count": 2,
+    "experience.0.title": "Head of Marketing",
+    "experience.0.organization": "Johnson & Johnson Digital",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Marketing Manager",
+    "experience.1.organization": "Bright Software",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "Northwestern University",
+    "education.0.credential": "MBA",
+    "skills.count_min": 5
+  }
+}

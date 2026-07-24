@@ -1,0 +1,37 @@
+{
+  "id": "01-strong-fit",
+  "notes": "Near-perfect skills/seniority/domain overlap — human label expects a high overall score.",
+  "expectedOverall": 0.9,
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Senior backend engineer with 8 years building high-throughput Python services on AWS." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Senior Backend Engineer",
+          "organization": "Riverline Logistics",
+          "startDate": "2019-03",
+          "endDate": null,
+          "bullets": [
+            "Designed and operated Python/Django microservices handling 40k requests/second on AWS ECS.",
+            "Owned the team's PostgreSQL data layer, including query optimization and replication topology.",
+            "Led migration from a monolith to event-driven services using SQS and Lambda."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Core", "skills": ["Python", "Django", "PostgreSQL", "AWS", "SQS", "Lambda", "Docker"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Senior Backend Engineer",
+    "company": "Meridian Freight",
+    "descriptionMd": "We are hiring a Senior Backend Engineer (7+ years) to build and operate high-throughput Python services on AWS. You will own our PostgreSQL data layer and lead event-driven migrations using SQS/Lambda. Required: Python, Django or similar, PostgreSQL, AWS, distributed systems experience."
+  }
+}

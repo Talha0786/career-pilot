@@ -1,0 +1,19 @@
+{
+  "id": "resume-08",
+  "notes": "A tagline/title line directly under the name, before the email — tests that the name heuristic still picks the name (first candidate line), not the tagline.",
+  "fields": {
+    "contact.name": "Aisha Bello",
+    "contact.email": "aisha.bello@example.dev",
+    "contact.phone": "408-555-9021",
+    "summary.present": false,
+    "experience.count": 1,
+    "experience.0.title": "Backend Engineer",
+    "experience.0.organization": "Vertex Cloud",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "Georgia Institute of Technology",
+    "education.0.credential": "B.S. Computer Science",
+    "skills.count_min": 5
+  }
+}

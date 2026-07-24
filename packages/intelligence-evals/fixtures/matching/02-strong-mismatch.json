@@ -1,0 +1,37 @@
+{
+  "id": "02-strong-mismatch",
+  "notes": "No overlap in skills, domain, or seniority framing at all — human label expects a very low overall score.",
+  "expectedOverall": 0.05,
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Graphic designer with 6 years of experience in brand identity and print design for consumer packaged goods." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Senior Graphic Designer",
+          "organization": "Palette Studio",
+          "startDate": "2018-01",
+          "endDate": null,
+          "bullets": [
+            "Designed packaging and brand identity systems for over 30 consumer product launches.",
+            "Led a team of 3 junior designers producing print and packaging assets in Adobe Illustrator and InDesign.",
+            "Managed relationships with print vendors to ensure color accuracy across production runs."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Design Tools", "skills": ["Adobe Illustrator", "InDesign", "Photoshop", "Typography", "Brand Identity"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Nuclear Reactor Operations Engineer",
+    "company": "Solstice Power",
+    "descriptionMd": "We are hiring a licensed Nuclear Reactor Operations Engineer to monitor and control reactor systems at our generating station. Required: NRC reactor operator license, degree in nuclear or mechanical engineering, 5+ years of hands-on reactor operations experience, deep knowledge of thermal-hydraulics and radiation safety protocols."
+  }
+}

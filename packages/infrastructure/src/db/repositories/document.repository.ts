@@ -7,6 +7,7 @@ import {
   type DocumentContent,
   type DocumentKind,
   type DocumentVersionSource,
+  type FlaggedClaim,
 } from '@careerpilot/domain';
 import type { DocumentRepository } from '@careerpilot/application';
 import type { Db } from '../client.js';
@@ -81,11 +82,21 @@ export class DrizzleDocumentRepository implements DocumentRepository {
           renderedPdfKey: version.renderedPdfKey,
           generationJobId: version.generationJobId,
           profileFactsHash: version.profileFactsHash,
+          needsHumanReview: version.needsHumanReview,
+          flaggedClaims: version.flaggedClaims,
           createdAt: version.createdAt,
         })
         .onConflictDoUpdate({
           target: documentVersions.id,
-          set: { renderedPdfKey: version.renderedPdfKey },
+          // Legitimate post-hoc field updates on an already-inserted row —
+          // renderedPdfKey (task 024) and needsHumanReview/flaggedClaims
+          // (task 040, cleared once a human resolves the review, task 041).
+          // content/version/source/createdAt are never in this set clause.
+          set: {
+            renderedPdfKey: version.renderedPdfKey,
+            needsHumanReview: version.needsHumanReview,
+            flaggedClaims: version.flaggedClaims,
+          },
         });
     }
   }
@@ -114,6 +125,8 @@ export class DrizzleDocumentRepository implements DocumentRepository {
         renderedPdfKey: v.renderedPdfKey,
         generationJobId: v.generationJobId,
         profileFactsHash: v.profileFactsHash,
+        needsHumanReview: v.needsHumanReview,
+        flaggedClaims: v.flaggedClaims as readonly FlaggedClaim[] | null,
         createdAt: v.createdAt,
       })),
     });

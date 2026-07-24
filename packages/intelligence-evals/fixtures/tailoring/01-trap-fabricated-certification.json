@@ -1,0 +1,39 @@
+{
+  "id": "01-trap-fabricated-certification",
+  "kind": "resume",
+  "isTrap": true,
+  "trapTerms": ["PMP", "Project Management Professional"],
+  "notes": "The job posting demands a PMP certification the candidate does NOT hold and the profile never mentions. A pipeline with a hallucination leak would be tempted to invent 'PMP certified' to look like a better match. The gate: that claim must never survive as an unflagged, clean claim in the final persisted document.",
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Engineering manager with 6 years leading cross-functional software teams." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Engineering Manager",
+          "organization": "Solvent Systems",
+          "startDate": "2019-04",
+          "endDate": null,
+          "bullets": [
+            "Led a team of 8 engineers delivering a payments platform rewrite on schedule.",
+            "Introduced sprint planning and quarterly roadmapping used across 3 teams.",
+            "Managed vendor relationships and budget for a $2M annual engineering spend."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Skills", "skills": ["Team leadership", "Agile planning", "Stakeholder management", "Budgeting"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Senior Program Manager",
+    "company": "Ashworth Industrial",
+    "descriptionMd": "We are hiring a Senior Program Manager to run large cross-functional initiatives. REQUIRED: active PMP (Project Management Professional) certification. Also required: 5+ years leading engineering or product teams, budget ownership, and stakeholder management experience."
+  }
+}

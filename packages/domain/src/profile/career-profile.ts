@@ -3,6 +3,7 @@ import { AggregateRoot, createEvent } from '../shared/domain-event.js';
 import { type CareerProfileId, type UserId, newCareerProfileId } from '../shared/ids.js';
 import { type Result, ok, err } from '../shared/result.js';
 import { type DomainError, validationFailed, forbidden, notFound } from '../shared/errors.js';
+import { PROFILE_EVENTS } from './events.js';
 import {
   ProfileSection,
   type ProfileSectionKind,
@@ -183,6 +184,7 @@ export class CareerProfile extends AggregateRoot {
         payload: { careerProfileId: this.id, sectionId: created.value.id, kind: args.kind },
       }),
     );
+    this.recordFactsChanged();
     return created;
   }
 
@@ -203,6 +205,7 @@ export class CareerProfile extends AggregateRoot {
         payload: { careerProfileId: this.id, sectionId: section.id },
       }),
     );
+    this.recordFactsChanged();
     return ok(undefined);
   }
 
@@ -218,7 +221,29 @@ export class CareerProfile extends AggregateRoot {
         payload: { careerProfileId: this.id, sectionId },
       }),
     );
+    this.recordFactsChanged();
     return ok(undefined);
+  }
+
+  /**
+   * Task 035: fires ONE stable event ("go re-embed this profile") on every
+   * mutation that can change `factsHash` — the embedding pipeline's worker
+   * handler subscribes to this event type, not to the finer-grained
+   * section_added/updated/removed events above (those exist for
+   * audit/UI purposes and predate this task). Deliberately NOT emitted from
+   * `CareerProfile.create` — a brand-new profile has zero sections, so
+   * embedding it would just embed empty content; the first `addSection`
+   * call is what makes embedding meaningful.
+   */
+  private recordFactsChanged(): void {
+    this.record(
+      createEvent({
+        eventType: PROFILE_EVENTS.FACTS_CHANGED,
+        aggregateType: 'CareerProfile',
+        aggregateId: this.id,
+        payload: { careerProfileId: this.id, userId: this.userId },
+      }),
+    );
   }
 
   updateDetails(args: {

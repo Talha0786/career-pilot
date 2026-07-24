@@ -1,0 +1,23 @@
+Tomás Vega
+tomas.vega@example.com
+212.555.7734
+
+Summary
+Product manager focused on developer tools and platform experience.
+
+Experience
+Senior Product Manager | Globex Inc
+(Mar 2020 - Oct 2023)
+* Owned the roadmap for the API platform, growing external usage 3x
+* Ran quarterly planning across four engineering pods
+
+Product Manager | Foobar Systems
+(Jan 2017 - Feb 2020)
+* Launched the mobile app redesign end to end
+
+Education
+Tech Institute, B.S. Information Systems
+2013 - 2017
+
+Skills
+Roadmapping, SQL, A/B Testing, Figma, JIRA

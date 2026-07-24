@@ -260,6 +260,11 @@ export const documentVersions = pgTable('document_versions', {
   renderedPdfKey: text('rendered_pdf_key'),
   generationJobId: uuid('generation_job_id'),
   profileFactsHash: text('profile_facts_hash'),
+  // Task 040 — claim-verification / human-review gate. Legitimate post-hoc
+  // field updates on an already-inserted row (same posture as
+  // renderedPdfKey above), never content/version/source/createdAt.
+  needsHumanReview: boolean('needs_human_review').notNull().default(false),
+  flaggedClaims: jsonb('flagged_claims'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   byDocument: index('document_versions_document_idx').on(t.documentId, t.version),
@@ -304,6 +309,25 @@ export const aiInvocations = pgTable('ai_invocations', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   byUserCreated: index('ai_invocations_user_created_idx').on(t.userId, t.createdAt),
+}));
+
+/**
+ * M5 (task 038). Unique on (profile_id, job_posting_id) — see
+ * `MatchScoreRepository`'s doc comment (application/src/ports/repositories.ts)
+ * for why this is upsert-on-recompute rather than the design doc's
+ * append-many-per-method sketch.
+ */
+export const matchScores = pgTable('match_scores', {
+  id: uuid('id').primaryKey(),
+  profileId: uuid('profile_id').notNull().references(() => careerProfiles.id, { onDelete: 'cascade' }),
+  jobPostingId: uuid('job_posting_id').notNull().references(() => jobPostings.id, { onDelete: 'cascade' }),
+  components: jsonb('components').notNull(),
+  factsHash: text('facts_hash').notNull(),
+  embeddingModel: text('embedding_model').notNull(),
+  computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byProfileJob: uniqueIndex('match_scores_profile_job_unique').on(t.profileId, t.jobPostingId),
+  byProfile: index('match_scores_profile_idx').on(t.profileId, t.computedAt.desc()),
 }));
 
 /** Auth events, credential changes, job creation — security model §6. */

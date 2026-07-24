@@ -3,6 +3,19 @@ import { type DocumentContent } from './document-content.js';
 
 export type DocumentVersionSource = 'imported' | 'generated' | 'edited';
 
+/**
+ * Task 040 — a claim task 040's adversarial verification pass could not map
+ * to any fact, surfaced for the diff-review UI (task 041). Deliberately
+ * NOT the full `ClaimAudit` shape (`packages/contracts/src/tailoring.ts`) —
+ * only the UNSUPPORTED subset is persisted here; the domain doesn't need to
+ * remember every claim that verified cleanly, only the ones a human must
+ * look at.
+ */
+export interface FlaggedClaim {
+  readonly text: string;
+  readonly confidence: number;
+}
+
 export interface DocumentVersionSnapshot {
   readonly id: DocumentVersionId;
   readonly documentId: DocumentId;
@@ -18,6 +31,19 @@ export interface DocumentVersionSnapshot {
    * "lets UI flag documents stale relative to profile."
    */
   readonly profileFactsHash: string | null;
+  /**
+   * Task 040 — the anti-hallucination contract's mandatory gate
+   * (docs/06-agent-design.md §4 point 4: "Human review is non-skippable
+   * before export/use"). True when generation exhausted its 2 regeneration
+   * retries and claim verification STILL found unsupported claims. A
+   * version with `needsHumanReview: true` is not exportable
+   * (`isExportable()`) until a human resolves the flagged claims (task 041).
+   * Always `false` for `imported`/`edited` sources — this is a
+   * generation-pipeline concept, not a general document state.
+   */
+  readonly needsHumanReview: boolean;
+  /** Non-null only when `needsHumanReview` is true. */
+  readonly flaggedClaims: readonly FlaggedClaim[] | null;
   readonly createdAt: Date;
 }
 
@@ -40,6 +66,8 @@ export class DocumentVersion {
     readonly renderedPdfKey: string | null,
     readonly generationJobId: string | null,
     readonly profileFactsHash: string | null,
+    readonly needsHumanReview: boolean,
+    readonly flaggedClaims: readonly FlaggedClaim[] | null,
     readonly createdAt: Date,
   ) {}
 
@@ -51,6 +79,8 @@ export class DocumentVersion {
     content: DocumentContent;
     generationJobId?: string | undefined;
     profileFactsHash?: string | undefined;
+    needsHumanReview?: boolean | undefined;
+    flaggedClaims?: readonly FlaggedClaim[] | null | undefined;
     now?: Date | undefined;
   }): DocumentVersion {
     return new DocumentVersion(
@@ -62,6 +92,8 @@ export class DocumentVersion {
       null,
       args.generationJobId ?? null,
       args.profileFactsHash ?? null,
+      args.needsHumanReview ?? false,
+      args.flaggedClaims ?? null,
       args.now ?? new Date(),
     );
   }
@@ -76,6 +108,8 @@ export class DocumentVersion {
       s.renderedPdfKey,
       s.generationJobId,
       s.profileFactsHash,
+      s.needsHumanReview,
+      s.flaggedClaims,
       s.createdAt,
     );
   }
@@ -98,6 +132,33 @@ export class DocumentVersion {
       key,
       this.generationJobId,
       this.profileFactsHash,
+      this.needsHumanReview,
+      this.flaggedClaims,
+      this.createdAt,
+    );
+  }
+
+  /**
+   * Task 041 — a human resolved the pending review (accepted the flagged
+   * claims as fine, or edited the content elsewhere and is re-confirming).
+   * Returns a NEW instance with `needsHumanReview` cleared — same
+   * "legitimate post-hoc field, not a content mutation" posture as
+   * `withRenderedPdfKey`. `flaggedClaims` is kept (not nulled out) as the
+   * historical record of what was flagged and resolved, not just what's
+   * currently pending.
+   */
+  withReviewResolved(): DocumentVersion {
+    return new DocumentVersion(
+      this.id,
+      this.documentId,
+      this.version,
+      this.source,
+      this.content,
+      this.renderedPdfKey,
+      this.generationJobId,
+      this.profileFactsHash,
+      false,
+      this.flaggedClaims,
       this.createdAt,
     );
   }
@@ -105,6 +166,17 @@ export class DocumentVersion {
   /** Stale relative to a profile whose current facts hash differs (or is unknown). */
   isStaleAgainst(currentProfileFactsHash: string): boolean {
     return this.profileFactsHash !== null && this.profileFactsHash !== currentProfileFactsHash;
+  }
+
+  /**
+   * Task 040's export-blocking gate (docs/06-agent-design.md §4 point 4):
+   * "Human review is non-skippable before export/use." Checked in code by
+   * every export path (`render-document.ts`), not just hidden in the UI —
+   * a version pending review must be structurally impossible to export,
+   * not merely inconvenient to.
+   */
+  isExportable(): boolean {
+    return !this.needsHumanReview;
   }
 
   toSnapshot(): DocumentVersionSnapshot {
@@ -117,6 +189,8 @@ export class DocumentVersion {
       renderedPdfKey: this.renderedPdfKey,
       generationJobId: this.generationJobId,
       profileFactsHash: this.profileFactsHash,
+      needsHumanReview: this.needsHumanReview,
+      flaggedClaims: this.flaggedClaims,
       createdAt: this.createdAt,
     };
   }

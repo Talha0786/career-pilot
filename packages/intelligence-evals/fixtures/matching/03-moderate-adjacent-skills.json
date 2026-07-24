@@ -1,0 +1,37 @@
+{
+  "id": "03-moderate-adjacent-skills",
+  "notes": "Strong frontend overlap but the role wants full-stack (backend/API ownership) the candidate has never done — human label expects a mid-range score, not high, not low.",
+  "expectedOverall": 0.55,
+  "profile": {
+    "sections": [
+      {
+        "kind": "summary",
+        "content": { "schemaVersion": 1, "text": "Frontend engineer with 3 years building React applications; no backend or API ownership experience." }
+      },
+      {
+        "kind": "experience",
+        "content": {
+          "schemaVersion": 1,
+          "title": "Frontend Engineer",
+          "organization": "Bluecart Retail",
+          "startDate": "2021-06",
+          "endDate": null,
+          "bullets": [
+            "Built and maintained the customer-facing React storefront serving 2M monthly visitors.",
+            "Implemented component library and design system used across 4 product teams.",
+            "Consumed REST APIs built by a separate backend team; never wrote server-side code."
+          ]
+        }
+      },
+      {
+        "kind": "skill_group",
+        "content": { "schemaVersion": 1, "groupName": "Frontend", "skills": ["React", "TypeScript", "CSS", "Webpack", "Jest"] }
+      }
+    ]
+  },
+  "job": {
+    "title": "Full-Stack Engineer",
+    "company": "Northbridge Software",
+    "descriptionMd": "We are hiring a Full-Stack Engineer to own features end-to-end: React on the frontend and a Node.js/PostgreSQL API on the backend. Required: React, TypeScript, and at least 2 years designing and operating backend REST APIs and relational databases. Backend ownership is a core, non-negotiable part of this role."
+  }
+}

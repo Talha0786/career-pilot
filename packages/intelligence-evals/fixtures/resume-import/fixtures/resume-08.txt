@@ -1,0 +1,17 @@
+Aisha Bello
+Senior Backend Engineer
+aisha.bello@example.dev
+408-555-9021
+
+Experience
+Backend Engineer at Vertex Cloud
+Oct 2020 - Present
+- Rebuilt the rate-limiting layer to handle 10x traffic
+- Wrote the on-call runbook adopted by three other teams
+
+Education
+Georgia Institute of Technology, B.S. Computer Science
+2016 - 2020
+
+Skills
+Rust, C++, Linux, Networking, Distributed Systems

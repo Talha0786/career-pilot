@@ -87,4 +87,36 @@ describe('renderDocument', () => {
     expect(isErr(r)).toBe(true);
     if (isErr(r)) expect(r.error.code).toBe('not_found');
   });
+
+  it('task 040 export-blocking gate: rejects rendering a version with needsHumanReview:true — enforced in code, not just hidden in the UI', async () => {
+    const uow = new FakeUnitOfWork();
+    const renderer = new FakeDocumentRenderer();
+    const storage = new InMemoryObjectStorage();
+    const createDocument = makeCreateDocumentUseCase({ uow });
+    const addDocumentVersion = makeAddDocumentVersionUseCase({ uow });
+    const renderDocument = makeRenderDocumentUseCase({ uow, renderer, storage });
+
+    const created = await createDocument({ userId: USER }, { kind: 'resume', title: 'Flagged Resume' });
+    if (!isOk(created)) throw new Error('setup failed');
+    const versionResult = await addDocumentVersion(
+      { userId: USER },
+      {
+        documentId: created.value.documentId,
+        source: 'generated',
+        content: resumeContent(),
+        needsHumanReview: true,
+        flaggedClaims: [{ text: 'Led a team of 12 engineers', confidence: 0.2 }],
+      },
+    );
+    if (!isOk(versionResult)) throw new Error('setup failed');
+
+    const r = await renderDocument(
+      { userId: USER },
+      { documentId: created.value.documentId, versionId: versionResult.value.versionId, format: 'pdf', template: 'classic' },
+    );
+    expect(isErr(r)).toBe(true);
+    if (isErr(r)) expect(r.error.code).toBe('conflict');
+    // NOT a silent no-op — zero renderer calls, zero bytes stored.
+    expect(renderer.calls).toHaveLength(0);
+  });
 });

@@ -10,3 +10,8 @@ coverage/
 *.log
 .next/
 backups/
+
+# Task 042: timestamped eval-run output (packages/intelligence-evals) —
+# results are point-in-time evidence attached to a task/commit message or a
+# nightly CI artifact, not a file that should grow/churn in git history.
+packages/intelligence-evals/results/

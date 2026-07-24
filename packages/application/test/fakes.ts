@@ -1,4 +1,4 @@
-import { ok, type Result, type DocumentContent } from '@careerpilot/domain';
+import { ok, err, type Result, type DocumentContent } from '@careerpilot/domain';
 import type {
   LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError,
 } from '../src/ports/llm.port.js';
@@ -6,6 +6,7 @@ import type { BudgetStore, CostEstimator } from '../src/ports/budget-guard.js';
 import type { AiInvocationRecord } from '../src/ports/llm.port.js';
 import type { DocumentRendererPort, RenderFormat, RenderTemplate } from '../src/ports/document-renderer.port.js';
 import type { ObjectStoragePort } from '../src/ports/object-storage.port.js';
+import { PromptRenderError, type PromptStore, type PromptTemplate, type PromptError } from '../src/ports/prompt-store.port.js';
 
 /** Deterministic fake — no network, ever. The default in all unit tests. */
 export class FakeLlmPort implements LlmPort {
@@ -86,6 +87,41 @@ export class InMemoryObjectStorage implements ObjectStoragePort {
   }
   async get(key: string): Promise<Buffer | null> {
     return this.files.get(key) ?? null;
+  }
+}
+
+/**
+ * In-memory `PromptStore` for application-layer unit tests — a canned
+ * `{{placeholder}}` template registered per task, with the SAME
+ * fail-loud-on-unfilled-placeholder behavior as `FilePromptStore` (task
+ * 034), so a test using this fake still exercises the real render contract.
+ */
+export class FakePromptStore implements PromptStore {
+  private templates = new Map<string, { body: string; frontmatter: PromptTemplate['frontmatter'] }>();
+
+  register(task: string, body: string, frontmatter?: Partial<PromptTemplate['frontmatter']>): void {
+    this.templates.set(task, {
+      body,
+      frontmatter: { modelTier: 'mid', temperature: 0.1, outputSchema: 'Unspecified', ...frontmatter },
+    });
+  }
+
+  async load(task: string): Promise<Result<PromptTemplate, PromptError>> {
+    const found = this.templates.get(task);
+    if (!found) return err({ code: 'task_not_found', message: `no fake template registered for "${task}"` });
+
+    return ok({
+      task,
+      version: 'v1',
+      frontmatter: found.frontmatter,
+      render: (vars) => {
+        const placeholders = [...found.body.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)].map((m) => m[1]!);
+        for (const key of placeholders) {
+          if (!(key in vars)) throw new PromptRenderError(`Missing value for placeholder "{{${key}}}"`);
+        }
+        return found.body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_w, key: string) => vars[key]!);
+      },
+    });
   }
 }
 
