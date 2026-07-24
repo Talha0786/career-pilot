@@ -86,6 +86,19 @@ export interface ConnectorConfigRepository {
   listEnabled(): Promise<ConnectorConfig[]>;
   listForUser(userId: UserId): Promise<ConnectorConfig[]>;
   save(config: ConnectorConfig): Promise<void>;
+  /**
+   * Atomic health-tracking update (task 032) — increments/resets
+   * `consecutive_failures` and recomputes `health` in a SINGLE
+   * read-modify-write against the database row, not a separate
+   * findById-then-save pair. Two connector runs for the SAME connector can
+   * genuinely complete concurrently (the scheduler processes multiple
+   * connectors — or, rarely, overlapping runs of the same one — in
+   * parallel); a naive findById/save pair racing on this counter is the
+   * exact same lost-update class task 015/016 closed for budget spend, just
+   * for a different counter. Returns the updated config, or null if the
+   * config was deleted between the run finishing and this call.
+   */
+  recordRunOutcome(connectorConfigId: string, succeeded: boolean, now: Date): Promise<ConnectorConfig | null>;
 }
 
 export type IngestionStatus = 'running' | 'ok' | 'partial' | 'failed';

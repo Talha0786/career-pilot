@@ -1,6 +1,9 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { asUserId } from '@careerpilot/domain';
-import type { ConnectorConfig, ConnectorConfigRepository } from '@careerpilot/application';
+import {
+  DEGRADED_AFTER_CONSECUTIVE_FAILURES, DISABLED_AFTER_CONSECUTIVE_FAILURES,
+  type ConnectorConfig, type ConnectorConfigRepository,
+} from '@careerpilot/application';
 import type { Db } from '../client.js';
 import { connectorConfigs } from '../schema/index.js';
 
@@ -55,6 +58,38 @@ export class DrizzleConnectorConfigRepository implements ConnectorConfigReposito
           updatedAt: config.updatedAt,
         },
       });
+  }
+
+  /**
+   * ONE atomic UPDATE — the CASE expressions read `consecutive_failures`
+   * from the row Postgres is currently locking for this statement, not a
+   * value the JS client read moments earlier. Two concurrent calls for the
+   * same `connectorConfigId` are serialized by Postgres' row-level lock:
+   * the second one's CASE expressions see the FIRST one's already-committed
+   * result, not a stale pre-increment value — this is what makes it
+   * immune to the lost-update race a `findById` + `save` pair hit (task
+   * 032's own chaos test caught this for real: 3 concurrent real failures
+   * only advanced the naive version's counter by 2).
+   */
+  async recordRunOutcome(connectorConfigId: string, succeeded: boolean, now: Date): Promise<ConnectorConfig | null> {
+    const rows = await this.db
+      .update(connectorConfigs)
+      .set({
+        consecutiveFailures: succeeded ? 0 : sql`${connectorConfigs.consecutiveFailures} + 1`,
+        health: succeeded
+          ? sql`'healthy'::connector_health`
+          : sql`CASE
+              WHEN ${connectorConfigs.consecutiveFailures} + 1 >= ${DISABLED_AFTER_CONSECUTIVE_FAILURES} THEN 'disabled'::connector_health
+              WHEN ${connectorConfigs.consecutiveFailures} + 1 >= ${DEGRADED_AFTER_CONSECUTIVE_FAILURES} THEN 'degraded'::connector_health
+              ELSE 'healthy'::connector_health
+            END`,
+        lastSuccessAt: succeeded ? now : sql`${connectorConfigs.lastSuccessAt}`,
+        updatedAt: now,
+      })
+      .where(eq(connectorConfigs.id, connectorConfigId))
+      .returning();
+    const row = rows[0];
+    return row ? this.toDomain(row) : null;
   }
 
   /** Used by task 032's PATCH /connectors/:id — enables a user-scoped ownership check before mutating. */

@@ -2,7 +2,7 @@ import { Worker, Queue, type Job } from 'bullmq';
 import type Redis from 'ioredis';
 import type { Logger } from 'pino';
 import type {
-  ConnectorConfigRepository, IngestionRunRepository, ClockPort, makeIngestJobBatchUseCase,
+  ConnectorConfigRepository, IngestionRunRepository, ClockPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase,
 } from '@careerpilot/application';
 import type { ConnectorRegistry, RawJob } from '@careerpilot/connectors';
 
@@ -16,6 +16,8 @@ export interface RunConnectorIngestionDeps {
   connectorConfigs: ConnectorConfigRepository;
   ingestionRuns: IngestionRunRepository;
   ingestJobBatch: ReturnType<typeof makeIngestJobBatchUseCase>;
+  /** Task 032: closes the loop on connector_configs.health after every run. */
+  updateConnectorHealth: ReturnType<typeof makeUpdateConnectorHealthUseCase>;
   registry: ConnectorRegistry;
   clock: ClockPort;
   logger: Logger;
@@ -53,12 +55,14 @@ export async function runConnectorIngestionOnce(deps: RunConnectorIngestionDeps,
   const connector = deps.registry.get(config.connectorKey);
   if (!connector) {
     await recordFailure(deps, config.id, `No connector registered for key "${config.connectorKey}"`);
+    await deps.updateConnectorHealth({ connectorConfigId: config.id, runStatus: 'failed', now: deps.clock.now() });
     return;
   }
 
   const parsedConfig = connector.configSchema.safeParse(config.config);
   if (!parsedConfig.success) {
     await recordFailure(deps, config.id, `Invalid connector config: ${parsedConfig.error.message}`);
+    await deps.updateConnectorHealth({ connectorConfigId: config.id, runStatus: 'failed', now: deps.clock.now() });
     return;
   }
 
@@ -103,8 +107,12 @@ export async function runConnectorIngestionOnce(deps: RunConnectorIngestionDeps,
     finishedAt: deps.clock.now(),
   });
 
+  // Task 032: health transitions driven by this REAL run's outcome, not a
+  // mocked signal — same status value that just got written to ingestion_runs.
+  await deps.updateConnectorHealth({ connectorConfigId: config.id, runStatus: status, now: deps.clock.now() });
+
   log.info({ status, fetched, inserted: batchResult.inserted, deduped: batchResult.deduped, error: lastError }, 'connector ingestion run complete');
-  void lastErrorRetryable; // reserved for task 032's retry/backoff policy — recorded but not yet acted on here
+  void lastErrorRetryable; // reserved for a future retry/backoff policy — recorded but not yet acted on here
 }
 
 async function recordFailure(deps: RunConnectorIngestionDeps, connectorConfigId: string, message: string): Promise<void> {

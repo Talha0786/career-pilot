@@ -13,7 +13,7 @@ import {
   PostgresBudgetStore,
   OpenAiCompatibleLlmAdapter,
 } from '@careerpilot/infrastructure';
-import { GuardedLlmPort, makeIngestJobBatchUseCase } from '@careerpilot/application';
+import { GuardedLlmPort, makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase } from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
 import {
   createGreenhouseConnector, createLeverConnector, createAshbyConnector,
@@ -89,6 +89,7 @@ async function main(): Promise<void> {
   const connectorConfigs = new DrizzleConnectorConfigRepository(db);
   const ingestionRuns = new DrizzleIngestionRunRepository(db);
   const ingestJobBatch = makeIngestJobBatchUseCase({ uow: new DrizzleUnitOfWork(db) });
+  const updateConnectorHealth = makeUpdateConnectorHealthUseCase({ connectorConfigs });
   const registry = buildConnectorRegistry();
   const connectorIngestionQueue = new Queue<RunConnectorIngestionPayload>(CONNECTOR_INGESTION_QUEUE, { connection: ingestionConnection });
   const connectorIngestionWorker = createRunConnectorIngestionWorker({
@@ -96,6 +97,7 @@ async function main(): Promise<void> {
     connectorConfigs,
     ingestionRuns,
     ingestJobBatch,
+    updateConnectorHealth,
     registry,
     clock: new SystemClock(),
     logger,

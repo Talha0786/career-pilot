@@ -6,6 +6,7 @@ export * from './auth/use-cases.js';
 export * from './discovery/commands/create-manual-job.js';
 export * from './discovery/commands/embed-job-posting.js';
 export * from './discovery/commands/ingest-job-batch.js';
+export * from './discovery/commands/update-connector-health.js';
 export * from './discovery/dedup.js';
 export * from './discovery/queries/list-jobs.js';
 export * from './discovery/queries/get-job.js';

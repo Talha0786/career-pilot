@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import {
   createDb, type Db, DrizzleUnitOfWork, DrizzleConnectorConfigRepository, DrizzleIngestionRunRepository, SystemClock,
 } from '@careerpilot/infrastructure';
-import { makeIngestJobBatchUseCase } from '@careerpilot/application';
+import { makeIngestJobBatchUseCase, makeUpdateConnectorHealthUseCase } from '@careerpilot/application';
 import { ok, err } from '@careerpilot/domain';
 import type { ConnectorPort, RawJob } from '@careerpilot/application';
 import { ConnectorRegistry } from '@careerpilot/connectors';
@@ -78,6 +78,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     const connectorConfigs = new DrizzleConnectorConfigRepository(db);
     const ingestionRuns = new DrizzleIngestionRunRepository(db);
     const ingestJobBatch = makeIngestJobBatchUseCase({ uow });
+    const updateConnectorHealth = makeUpdateConnectorHealthUseCase({ connectorConfigs });
     const registry = new ConnectorRegistry();
 
     const rawJob: RawJob = {
@@ -114,7 +115,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     await connectorConfigs.save(healthyConfig);
     await connectorConfigs.save(brokenConfig);
 
-    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
+    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, updateConnectorHealth, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
 
     // Run both "scheduled jobs" concurrently — the shape a real scheduler
     // would present them in — and assert the broken one's rejection (if it
@@ -141,6 +142,17 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     expect(brokenRuns[0]!.status).toBe('failed');
     expect(brokenRuns[0]!.error).toContain('upstream is permanently on fire');
     expect(brokenRuns[0]!.stats).toEqual({ fetched: 0, deduped: 0, inserted: 0 });
+
+    // Task 032: health tracking moves in step with the real run outcome —
+    // one failure isn't enough to flip to degraded (threshold is 3), but the
+    // counter is already incrementing; the healthy connector stays untouched.
+    const brokenAfter = await connectorConfigs.findById(brokenConfig.id);
+    expect(brokenAfter!.consecutiveFailures).toBe(1);
+    expect(brokenAfter!.health).toBe('healthy');
+    const healthyAfter = await connectorConfigs.findById(healthyConfig.id);
+    expect(healthyAfter!.consecutiveFailures).toBe(0);
+    expect(healthyAfter!.health).toBe('healthy');
+    expect(healthyAfter!.lastSuccessAt).not.toBeNull();
   });
 
   it('every run — ok AND failed — writes an ingestion_runs row (task 029 acceptance: stats jsonb for every run)', async () => {
@@ -154,6 +166,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     const connectorConfigs = new DrizzleConnectorConfigRepository(db);
     const ingestionRuns = new DrizzleIngestionRunRepository(db);
     const ingestJobBatch = makeIngestJobBatchUseCase({ uow });
+    const updateConnectorHealth = makeUpdateConnectorHealthUseCase({ connectorConfigs });
     const registry = new ConnectorRegistry();
     registry.register(brokenConnector());
 
@@ -175,7 +188,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     };
     await connectorConfigs.save(config);
 
-    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
+    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, updateConnectorHealth, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
     await runConnectorIngestionOnce(deps, config.id);
 
     const rows = await db.execute(sql`SELECT status, stats FROM ingestion_runs WHERE connector_config_id = ${config.id}`);
@@ -194,6 +207,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     const connectorConfigs = new DrizzleConnectorConfigRepository(db);
     const ingestionRuns = new DrizzleIngestionRunRepository(db);
     const ingestJobBatch = makeIngestJobBatchUseCase({ uow });
+    const updateConnectorHealth = makeUpdateConnectorHealthUseCase({ connectorConfigs });
     const registry = new ConnectorRegistry();
     registry.register(healthyConnector([]));
 
@@ -215,7 +229,7 @@ describe('runConnectorIngestionOnce — connector isolation (task 029 acceptance
     };
     await connectorConfigs.save(config);
 
-    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
+    const deps = { connectorConfigs, ingestionRuns, ingestJobBatch, updateConnectorHealth, registry, clock: new SystemClock(), logger: pino({ level: 'silent' }) };
     await runConnectorIngestionOnce(deps, config.id);
 
     const rows = await db.execute(sql`SELECT count(*)::int AS n FROM ingestion_runs WHERE connector_config_id = ${config.id}`);

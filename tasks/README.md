@@ -56,6 +56,6 @@ Every task file (`NNN.md`) has exactly these sections:
 | [029](029.md) | Scheduler + ingestion pipeline + dedup | M4 | DONE |
 | [030](030.md) | Class B: capture ingest endpoint | M4 | DONE |
 | [031](031.md) | Class C reference adapter: SerpApi Google Jobs (BYO key) | M4 | DONE (fixture-verified; live canary pending `SERPAPI_KEY`) |
-| [032](032.md) | Connector health + chaos test | M4 | TODO |
+| [032](032.md) | Connector health + chaos test | M4 | DONE |
 
 M3 (019-025) and M4 (026-032) run as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. Milestones beyond M4 get tasks when their design is approved — not before. Speculative tasks rot.

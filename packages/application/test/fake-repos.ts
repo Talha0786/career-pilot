@@ -4,6 +4,7 @@ import type {
   OutboxPort, UnitOfWork, TransactionContext, HasherPort, DedupCandidate,
   ConnectorConfigRepository, ConnectorConfig, IngestionRunRepository, IngestionRun, IngestionRunStats,
 } from '../src/ports/repositories.js';
+import { DEGRADED_AFTER_CONSECUTIVE_FAILURES, DISABLED_AFTER_CONSECUTIVE_FAILURES } from '../src/discovery/commands/update-connector-health.js';
 
 /**
  * In-memory fakes for pure application-layer unit tests (task 005 acceptance:
@@ -115,6 +116,34 @@ export class FakeConnectorConfigRepository implements ConnectorConfigRepository 
   }
   async save(config: ConnectorConfig): Promise<void> {
     this.byId.set(config.id, config);
+  }
+  /**
+   * In-memory equivalent of the real repository's atomic UPDATE (task 032):
+   * no `await` between the `get` and the `set`, so nothing can interleave
+   * between them — this is what makes it safe even if two calls for the
+   * same id are kicked off "concurrently" via `Promise.all` in a test; the
+   * synchronous JS section between them still runs to completion atomically.
+   */
+  async recordRunOutcome(connectorConfigId: string, succeeded: boolean, now: Date): Promise<ConnectorConfig | null> {
+    const existing = this.byId.get(connectorConfigId);
+    if (!existing) return null;
+    const consecutiveFailures = succeeded ? 0 : existing.consecutiveFailures + 1;
+    const health = succeeded
+      ? 'healthy'
+      : consecutiveFailures >= DISABLED_AFTER_CONSECUTIVE_FAILURES
+        ? 'disabled'
+        : consecutiveFailures >= DEGRADED_AFTER_CONSECUTIVE_FAILURES
+          ? 'degraded'
+          : 'healthy';
+    const updated: ConnectorConfig = {
+      ...existing,
+      consecutiveFailures,
+      health,
+      lastSuccessAt: succeeded ? now : existing.lastSuccessAt,
+      updatedAt: now,
+    };
+    this.byId.set(connectorConfigId, updated);
+    return updated;
   }
 }
 
