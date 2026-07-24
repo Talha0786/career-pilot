@@ -1,5 +1,7 @@
 import { ok, err, type Result } from '@careerpilot/domain';
-import type { LlmPort, EmbedRequest, EmbedResponse, LlmError } from '@careerpilot/application';
+import type {
+  LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError,
+} from '@careerpilot/application';
 
 /**
  * OpenAI-compatible embeddings adapter (ADR-006). Covers OpenAI, Ollama, and
@@ -55,6 +57,54 @@ export class OpenAiCompatibleLlmAdapter implements LlmPort {
     }
     return ok(parsed);
   }
+
+  /** `/chat/completions` — the same OpenAI-compatible shape covers OpenAI, Ollama, and vLLM (ADR-006). */
+  async complete(req: CompleteRequest): Promise<Result<CompleteResponse, LlmError>> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(this.apiKey ? { authorization: `Bearer ${this.apiKey}` } : {}),
+        },
+        body: JSON.stringify({
+          model: req.model,
+          messages: [
+            ...(req.system ? [{ role: 'system', content: req.system }] : []),
+            { role: 'user', content: req.prompt },
+          ],
+          ...(req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
+          ...(req.maxTokens ? { max_tokens: req.maxTokens } : {}),
+        }),
+      });
+    } catch (cause) {
+      return err({
+        code: 'provider_unavailable',
+        message: `Could not reach LLM provider at ${this.baseUrl}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      });
+    }
+
+    if (response.status === 429) {
+      return err({ code: 'rate_limited', message: 'LLM provider rate-limited the request' });
+    }
+    if (!response.ok) {
+      return err({ code: 'provider_unavailable', message: `LLM provider returned HTTP ${response.status}` });
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      return err({ code: 'invalid_response', message: 'LLM provider response was not valid JSON' });
+    }
+
+    const parsed = parseCompletionResponse(body, req.model);
+    if (!parsed) {
+      return err({ code: 'invalid_response', message: 'LLM provider response did not match the expected chat-completion shape' });
+    }
+    return ok(parsed);
+  }
 }
 
 /** Narrow, defensive parsing — we don't trust an external HTTP response's shape. */
@@ -72,4 +122,22 @@ function parseEmbeddingResponse(body: unknown, fallbackModel: string): EmbedResp
   const model = typeof b.model === 'string' ? b.model : fallbackModel;
 
   return { vector, model, promptTokens };
+}
+
+function parseCompletionResponse(body: unknown, fallbackModel: string): CompleteResponse | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const b = body as Record<string, unknown>;
+  const choices = b.choices;
+  if (!Array.isArray(choices) || choices.length === 0) return null;
+  const first = choices[0] as Record<string, unknown> | undefined;
+  const message = first?.message as Record<string, unknown> | undefined;
+  const text = message?.content;
+  if (typeof text !== 'string') return null;
+
+  const usage = b.usage as Record<string, unknown> | undefined;
+  const promptTokens = typeof usage?.prompt_tokens === 'number' ? usage.prompt_tokens : 0;
+  const completionTokens = typeof usage?.completion_tokens === 'number' ? usage.completion_tokens : 0;
+  const model = typeof b.model === 'string' ? b.model : fallbackModel;
+
+  return { text, model, promptTokens, completionTokens };
 }

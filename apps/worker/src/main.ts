@@ -7,9 +7,12 @@ import {
   BullMqOutboxPublisher,
   PostgresBudgetStore,
   OpenAiCompatibleLlmAdapter,
+  DocumentTextExtractor,
+  RedisDraftStore,
 } from '@careerpilot/infrastructure';
 import { GuardedLlmPort } from '@careerpilot/application';
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
+import { createParseResumeWorker } from './handlers/parse-resume.handler.js';
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -32,13 +35,18 @@ const logger = pino({ level: env.logLevel });
 const estimator = {
   estimateEmbedCostUsd: (req: { input: string }) => (req.input.length / 4) * 0.00001,
   actualEmbedCostUsd: (_model: string, promptTokens: number) => promptTokens * 0.00001,
+  estimateCompleteCostUsd: (req: { prompt: string }) => (req.prompt.length / 4) * 0.00002,
+  actualCompleteCostUsd: (_model: string, promptTokens: number, completionTokens: number) =>
+    (promptTokens + completionTokens) * 0.00002,
 };
 
 async function main(): Promise<void> {
   const { db, close: closeDb } = createDb(env.databaseUrl);
   const workerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const resumeWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const draftStoreConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 
   const jobPostings = new DrizzleJobPostingRepository(db);
   const llm = new OpenAiCompatibleLlmAdapter(env.llmBaseUrl, env.llmApiKey);
@@ -54,6 +62,16 @@ async function main(): Promise<void> {
     publishWsEvent: async (event) => {
       await wsPublisher.publish('ws:job.embedded', JSON.stringify(event));
     },
+  });
+
+  // Task 023: resume import parsing. Deliberately does NOT go through
+  // guardedLlm — mapResumeTextToDraft is heuristic/network-free (see its
+  // file-level comment); nothing here spends LLM budget.
+  const resumeWorker = createParseResumeWorker({
+    connection: resumeWorkerConnection,
+    extractor: new DocumentTextExtractor(),
+    drafts: new RedisDraftStore(draftStoreConnection),
+    logger,
   });
 
   const relayPublisher = new BullMqOutboxPublisher(relayConnection);
@@ -79,10 +97,13 @@ async function main(): Promise<void> {
     relayRunning = false;
     await relayLoop;
     await worker.close();
+    await resumeWorker.close();
     await relayPublisher.closeAll();
     await workerConnection.quit();
+    await resumeWorkerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();
+    await draftStoreConnection.quit();
     await closeDb();
     process.exit(0);
   };

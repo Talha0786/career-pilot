@@ -1,5 +1,7 @@
 import { ok, type Result } from '@careerpilot/domain';
-import type { LlmPort, EmbedRequest, EmbedResponse, LlmError } from '../src/ports/llm.port.js';
+import type {
+  LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError,
+} from '../src/ports/llm.port.js';
 import type { BudgetStore, CostEstimator } from '../src/ports/budget-guard.js';
 import type { AiInvocationRecord } from '../src/ports/llm.port.js';
 
@@ -7,6 +9,10 @@ import type { AiInvocationRecord } from '../src/ports/llm.port.js';
 export class FakeLlmPort implements LlmPort {
   public callCount = 0;
   public lastRequest: EmbedRequest | null = null;
+  public completeCallCount = 0;
+  public lastCompleteRequest: CompleteRequest | null = null;
+  /** Tests set this to control what `complete` returns. */
+  public completeResponseText = '{}';
 
   async embed(req: EmbedRequest): Promise<Result<EmbedResponse, LlmError>> {
     this.callCount += 1;
@@ -15,6 +21,17 @@ export class FakeLlmPort implements LlmPort {
     // assert "something was returned" without pretending to be a real model.
     const vector = Array.from({ length: 8 }, (_, i) => (req.input.length + i) / 100);
     return ok({ vector, model: req.model, promptTokens: Math.ceil(req.input.length / 4) });
+  }
+
+  async complete(req: CompleteRequest): Promise<Result<CompleteResponse, LlmError>> {
+    this.completeCallCount += 1;
+    this.lastCompleteRequest = req;
+    return ok({
+      text: this.completeResponseText,
+      model: req.model,
+      promptTokens: Math.ceil(req.prompt.length / 4),
+      completionTokens: Math.ceil(this.completeResponseText.length / 4),
+    });
   }
 }
 
@@ -58,5 +75,11 @@ export class FakeCostEstimator implements CostEstimator {
   }
   actualEmbedCostUsd(_model: string, promptTokens: number): number {
     return promptTokens * 0.00002;
+  }
+  estimateCompleteCostUsd(req: CompleteRequest): number {
+    return req.prompt.length * 0.00001;
+  }
+  actualCompleteCostUsd(_model: string, promptTokens: number, completionTokens: number): number {
+    return (promptTokens + completionTokens) * 0.00002;
   }
 }

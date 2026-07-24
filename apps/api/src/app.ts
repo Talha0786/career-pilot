@@ -12,6 +12,8 @@ import type {
   ProfileRepository,
   DocumentRepository,
   HasherPort,
+  QueuePort,
+  DraftStorePort,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
 import { registerAuthPlugin } from './plugins/auth.js';
@@ -43,6 +45,8 @@ export interface AppDeps {
   applications: ApplicationRepository;
   profiles: ProfileRepository;
   documents: DocumentRepository;
+  queue: QueuePort;
+  drafts: DraftStorePort;
   hasher: HasherPort;
   outboxRelay: OutboxRelay;
   jobQueue: Queue;
@@ -78,7 +82,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerJobRoutes(app, { uow: deps.uow, jobPostings: deps.jobPostings });
   registerApplicationRoutes(app, { uow: deps.uow });
   registerBoardRoutes(app, { applications: deps.applications, jobPostings: deps.jobPostings });
-  registerProfileRoutes(app, { uow: deps.uow, profiles: deps.profiles });
+  registerProfileRoutes(app, { uow: deps.uow, profiles: deps.profiles, queue: deps.queue, drafts: deps.drafts });
   registerDocumentRoutes(app, { uow: deps.uow, documents: deps.documents, profiles: deps.profiles });
   registerAdminRoutes(app, { jobQueue: deps.jobQueue, outboxRelay: deps.outboxRelay, budgetStore: deps.budgetStore });
   registerWsRoutes(app, { hub });

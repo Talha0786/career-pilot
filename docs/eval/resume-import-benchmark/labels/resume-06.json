@@ -1,0 +1,23 @@
+{
+  "id": "resume-06",
+  "notes": "Title|Org pipe separator, parenthesized date ranges, asterisk bullets, dotted phone format.",
+  "fields": {
+    "contact.name": "Tomás Vega",
+    "contact.email": "tomas.vega@example.com",
+    "contact.phone": "212-555-7734",
+    "summary.present": true,
+    "experience.count": 2,
+    "experience.0.title": "Senior Product Manager",
+    "experience.0.organization": "Globex Inc",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Product Manager",
+    "experience.1.organization": "Foobar Systems",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "Tech Institute",
+    "education.0.credential": "B.S. Information Systems",
+    "skills.count_min": 5
+  }
+}

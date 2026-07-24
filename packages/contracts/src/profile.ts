@@ -108,3 +108,66 @@ export const CareerProfileDtoSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type CareerProfileDto = z.infer<typeof CareerProfileDtoSchema>;
+
+// --- Resume import (task 023) ---
+// Deliberately hardcoded mime-type literals, not imported from
+// @careerpilot/application/domain — contracts has zero deps beyond zod
+// (existing convention, packages/contracts/package.json).
+export const RESUME_IMPORT_PDF_MIME = 'application/pdf';
+export const RESUME_IMPORT_DOCX_MIME =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/** JSON+base64 body, not true multipart — see task 022's deliberate-deviation note for why. */
+export const ImportResumeRequestSchema = z.object({
+  filename: z.string().min(1).max(255),
+  mimeType: z.enum([RESUME_IMPORT_PDF_MIME, RESUME_IMPORT_DOCX_MIME]),
+  fileBase64: z.string().min(1),
+});
+export type ImportResumeRequest = z.infer<typeof ImportResumeRequestSchema>;
+
+export const ImportResumeResponseSchema = z.object({ draftId: z.string().uuid() });
+export type ImportResumeResponse = z.infer<typeof ImportResumeResponseSchema>;
+
+const DraftField = <T extends z.ZodTypeAny>(inner: T) =>
+  z.object({ value: inner, confidence: z.number().min(0).max(1) });
+
+export const ResumeImportDraftSectionSchema = z.object({
+  kind: ProfileSectionKindSchema,
+  content: ProfileSectionDtoSchema.shape.content,
+  confidence: z.number().min(0).max(1),
+});
+
+export const ResumeImportDraftContentSchema = z.object({
+  contact: z.object({
+    name: DraftField(z.string().nullable()),
+    email: DraftField(z.string().nullable()),
+    phone: DraftField(z.string().nullable()),
+  }),
+  summary: DraftField(z.string().nullable()),
+  sections: z.array(ResumeImportDraftSectionSchema),
+});
+
+export const ResumeImportDraftStatusSchema = z.enum(['processing', 'ready', 'failed']);
+
+export const GetResumeImportDraftResponseSchema = z.object({
+  draftId: z.string().uuid(),
+  filename: z.string(),
+  status: ResumeImportDraftStatusSchema,
+  draft: ResumeImportDraftContentSchema.nullable(),
+  error: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type GetResumeImportDraftResponse = z.infer<typeof GetResumeImportDraftResponseSchema>;
+
+/** The reviewed/edited section list from the confirm screen — reuses AddSectionRequestSchema's kind+content shape (its `sort` is optional and simply unused here). */
+export const ConfirmResumeImportRequestSchema = z.object({
+  sections: z.array(AddSectionRequestSchema).min(1),
+  profileTitle: z.string().min(1).max(200).optional(),
+});
+export type ConfirmResumeImportRequest = z.infer<typeof ConfirmResumeImportRequestSchema>;
+
+export const ConfirmResumeImportResponseSchema = z.object({
+  profileId: z.string().uuid(),
+  sectionsAdded: z.number().int().min(0),
+});
+export type ConfirmResumeImportResponse = z.infer<typeof ConfirmResumeImportResponseSchema>;

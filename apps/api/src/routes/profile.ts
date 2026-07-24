@@ -1,12 +1,20 @@
 import type { FastifyInstance } from 'fastify';
-import { PutProfileRequestSchema, AddSectionRequestSchema } from '@careerpilot/contracts';
+import {
+  PutProfileRequestSchema,
+  AddSectionRequestSchema,
+  ImportResumeRequestSchema,
+  ConfirmResumeImportRequestSchema,
+} from '@careerpilot/contracts';
 import {
   makeGetProfileUseCase,
   makeCreateProfileUseCase,
   makeUpdateProfileUseCase,
   makeAddSectionUseCase,
+  makeImportResumeUseCase,
+  makeConfirmResumeImportUseCase,
+  makeGetResumeImportDraftUseCase,
 } from '@careerpilot/application';
-import type { UnitOfWork, ProfileRepository } from '@careerpilot/application';
+import type { UnitOfWork, ProfileRepository, QueuePort, DraftStorePort } from '@careerpilot/application';
 import { sendDomainError, sendProblem } from '../lib/problem.js';
 import { requireAuth } from '../plugins/auth.js';
 
@@ -20,12 +28,15 @@ import { requireAuth } from '../plugins/auth.js';
  */
 export function registerProfileRoutes(
   app: FastifyInstance,
-  deps: { uow: UnitOfWork; profiles: ProfileRepository },
+  deps: { uow: UnitOfWork; profiles: ProfileRepository; queue: QueuePort; drafts: DraftStorePort },
 ): void {
   const getProfile = makeGetProfileUseCase({ profiles: deps.profiles });
   const createProfile = makeCreateProfileUseCase({ uow: deps.uow });
   const updateProfile = makeUpdateProfileUseCase({ uow: deps.uow });
   const addSection = makeAddSectionUseCase({ uow: deps.uow });
+  const importResume = makeImportResumeUseCase({ queue: deps.queue, drafts: deps.drafts });
+  const getResumeImportDraft = makeGetResumeImportDraftUseCase({ drafts: deps.drafts });
+  const confirmResumeImport = makeConfirmResumeImportUseCase({ uow: deps.uow, drafts: deps.drafts });
 
   app.get('/profile', { preHandler: requireAuth }, async (request, reply) => {
     const result = await getProfile(request.actor!);
@@ -62,5 +73,46 @@ export function registerProfileRoutes(
     const result = await addSection(request.actor!, parsed.data);
     if (!result.ok) return sendDomainError(reply, result.error);
     return reply.code(201).send(result.value);
+  });
+
+  // 202 — mirrors POST /jobs (task 011): parsing happens in the worker,
+  // the draft isn't ready yet when this returns.
+  //
+  // KNOWN GAP (task 023): body is JSON + base64 (ImportResumeRequestSchema),
+  // not true multipart/form-data — @fastify/multipart wasn't added this
+  // session. Functionally complete (the client reads the file as an
+  // ArrayBuffer and base64-encodes it), but real multipart would be more
+  // idiomatic and avoid the ~33% base64 size overhead on large uploads.
+  // The use-case boundary (ImportResumeInput) is already decoupled from
+  // the transport, so swapping the body parser later doesn't ripple down.
+  app.post('/profile/import', { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = ImportResumeRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendProblem(reply, 400, { code: 'validation_failed', message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+    }
+
+    const result = await importResume(request.actor!, parsed.data);
+    if (!result.ok) return sendDomainError(reply, result.error);
+    return reply.code(202).send(result.value);
+  });
+
+  // Poll target for the review screen (task 025) — not in task 023's
+  // literal route list, but required for the client to ever SEE a parsed
+  // draft before confirming it (same reasoning as documents.ts's GET /:id).
+  app.get<{ Params: { draftId: string } }>('/profile/import/:draftId', { preHandler: requireAuth }, async (request, reply) => {
+    const result = await getResumeImportDraft(request.actor!, request.params.draftId);
+    if (!result.ok) return sendDomainError(reply, result.error);
+    return reply.send(result.value);
+  });
+
+  app.post<{ Params: { draftId: string } }>('/profile/import/:draftId/confirm', { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = ConfirmResumeImportRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendProblem(reply, 400, { code: 'validation_failed', message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+    }
+
+    const result = await confirmResumeImport(request.actor!, { draftId: request.params.draftId, ...parsed.data });
+    if (!result.ok) return sendDomainError(reply, result.error);
+    return reply.send(result.value);
   });
 }

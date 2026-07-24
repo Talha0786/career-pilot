@@ -79,7 +79,10 @@ describe('End-to-end: paste job → outbox → relay → BullMQ → worker → e
     const { PostgresBudgetStore } = await import('@careerpilot/infrastructure');
     const inner = new OpenAiCompatibleLlmAdapter(`http://localhost:${port}`, null);
     const budgetStore = new PostgresBudgetStore(db);
-    const estimator = { estimateEmbedCostUsd: () => 0.0001, actualEmbedCostUsd: () => 0.0001 };
+    const estimator = {
+      estimateEmbedCostUsd: () => 0.0001, actualEmbedCostUsd: () => 0.0001,
+      estimateCompleteCostUsd: () => 0.0001, actualCompleteCostUsd: () => 0.0001,
+    };
     const guardedLlm = new GuardedLlmPort(inner, budgetStore, estimator, 10, 'test-openai-compat');
 
     const logger = pino({ level: 'silent' });
@@ -157,9 +160,14 @@ describe('End-to-end: paste job → outbox → relay → BullMQ → worker → e
         callCount += 1;
         return { ok: true, value: { vector: Array.from({ length: 768 }, () => 0.1), model: req.model, promptTokens: 5 } };
       },
+      complete: async (req) => ({ ok: true, value: { text: '{}', model: req.model, promptTokens: 0, completionTokens: 0 } }),
     };
     const { PostgresBudgetStore } = await import('@careerpilot/infrastructure');
-    const guardedLlm = new GuardedLlmPort(countingLlm, new PostgresBudgetStore(db), { estimateEmbedCostUsd: () => 0, actualEmbedCostUsd: () => 0 }, 100, 'test');
+    const guardedLlm = new GuardedLlmPort(
+      countingLlm, new PostgresBudgetStore(db),
+      { estimateEmbedCostUsd: () => 0, actualEmbedCostUsd: () => 0, estimateCompleteCostUsd: () => 0, actualCompleteCostUsd: () => 0 },
+      100, 'test',
+    );
 
     const worker = createJobPostedWorker({
       connection: redis, jobPostings, llm: guardedLlm, embeddingModel: 'nomic-embed-text',
@@ -233,9 +241,14 @@ describe('End-to-end: paste job → outbox → relay → BullMQ → worker → e
         await new Promise((r) => setTimeout(r, 200));
         return { ok: true, value: { vector: Array.from({ length: 768 }, () => 0.1), model: req.model, promptTokens: 5 } };
       },
+      complete: async (req) => ({ ok: true, value: { text: '{}', model: req.model, promptTokens: 0, completionTokens: 0 } }),
     };
     const { PostgresBudgetStore } = await import('@careerpilot/infrastructure');
-    const guardedLlm = new GuardedLlmPort(countingLlm, new PostgresBudgetStore(db), { estimateEmbedCostUsd: () => 0, actualEmbedCostUsd: () => 0 }, 100, 'test');
+    const guardedLlm = new GuardedLlmPort(
+      countingLlm, new PostgresBudgetStore(db),
+      { estimateEmbedCostUsd: () => 0, actualEmbedCostUsd: () => 0, estimateCompleteCostUsd: () => 0, actualCompleteCostUsd: () => 0 },
+      100, 'test',
+    );
 
     // concurrency: 4 (hardcoded in createJobPostedWorker) — both deliveries
     // below are eligible to be picked up by the worker in parallel, unlike

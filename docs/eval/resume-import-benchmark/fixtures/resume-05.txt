@@ -1,0 +1,26 @@
+Elena Rossi
+elena.rossi@example.net
++1 312-555-8890
+
+Objective
+Data scientist seeking to apply machine learning to healthcare outcomes.
+
+Professional Experience
+Data Scientist at HealthCore Analytics
+Feb 2021 - Present
+- Built a readmission-risk model deployed to 12 hospital systems
+- Presented findings to the executive leadership team
+
+Research Assistant at University Lab
+Sep 2018 - Jan 2021
+- Published two peer-reviewed papers on time-series forecasting
+
+Education
+Massachusetts Institute of Technology, M.S. Data Science
+2019 - 2021
+
+State College, B.A. Mathematics
+2015 - 2019
+
+Skills
+Python, R, TensorFlow, PyTorch, SQL, Spark

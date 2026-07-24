@@ -51,6 +51,9 @@ describe('GuardedLlmPort — the raw port must never be reachable without this',
       async embed() {
         return { ok: false, error: { code: 'provider_unavailable', message: 'connection refused' } };
       },
+      async complete() {
+        return { ok: false, error: { code: 'provider_unavailable', message: 'connection refused' } };
+      },
     };
     const store = new InMemoryBudgetStore();
     const guard = new GuardedLlmPort(failing, store, new FakeCostEstimator(), 10, 'fake-provider');

@@ -1,0 +1,29 @@
+{
+  "id": "resume-03",
+  "notes": "Three same-employer roles (progression), plain-year dates, semicolon skills, Certifications section, no Summary.",
+  "fields": {
+    "contact.name": "Priya Natarajan",
+    "contact.email": "priya.n@example.org",
+    "contact.phone": "650-555-2211",
+    "summary.present": false,
+    "experience.count": 3,
+    "experience.0.title": "Junior Developer",
+    "experience.0.organization": "Bright Software",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "experience.1.title": "Developer",
+    "experience.1.organization": "Bright Software",
+    "experience.1.hasDates": true,
+    "experience.1.hasBullets": true,
+    "experience.2.title": "Staff Developer",
+    "experience.2.organization": "Bright Software",
+    "experience.2.hasDates": true,
+    "experience.2.hasBullets": true,
+    "certification.count": 2,
+    "certification.0.name": "AWS Certified Solutions Architect",
+    "certification.0.issuer": "Amazon Web Services",
+    "certification.1.name": "Certified Kubernetes Administrator",
+    "certification.1.issuer": "The Linux Foundation",
+    "skills.count_min": 5
+  }
+}

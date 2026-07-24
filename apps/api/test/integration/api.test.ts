@@ -13,6 +13,8 @@ import {
   DrizzleDocumentRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
+  BullMqQueuePort,
+  RedisDraftStore,
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
@@ -57,6 +59,8 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
       applications: new DrizzleApplicationRepository(db),
       profiles: new DrizzleProfileRepository(db),
       documents: new DrizzleDocumentRepository(db),
+      queue: new BullMqQueuePort(redis),
+      drafts: new RedisDraftStore(redis),
       hasher: new Argon2Hasher(),
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,
@@ -314,6 +318,110 @@ describe('API — auth, jobs, board, ownership (real Postgres + Redis)', () => {
 
       const aliceRes = await app.inject({ method: 'GET', url: '/profile', headers: { cookie: alice.cookie } });
       expect(aliceRes.json().title).toBe('Alice Career');
+    });
+  });
+
+  describe('profile import — upload, poll, confirm (task 023)', () => {
+    const PDF_MIME = 'application/pdf';
+
+    it('POST /profile/import validates mime type before enqueueing', async () => {
+      const { cookie } = await registerAndLogin('import-badmime@test.com');
+      const res = await app.inject({
+        method: 'POST', url: '/profile/import', headers: { cookie },
+        payload: { filename: 'resume.exe', mimeType: 'application/x-msdownload', fileBase64: 'aGVsbG8=' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().code).toBe('validation_failed');
+    });
+
+    it('POST /profile/import returns 202 + draftId, and GET immediately shows status=processing', async () => {
+      const { cookie } = await registerAndLogin('import-upload@test.com');
+      const res = await app.inject({
+        method: 'POST', url: '/profile/import', headers: { cookie },
+        payload: { filename: 'resume.pdf', mimeType: PDF_MIME, fileBase64: 'aGVsbG8gd29ybGQ=' },
+      });
+      expect(res.statusCode).toBe(202);
+      const draftId = res.json().draftId as string;
+      expect(draftId).toBeTruthy();
+
+      const getRes = await app.inject({ method: 'GET', url: `/profile/import/${draftId}`, headers: { cookie } });
+      expect(getRes.statusCode).toBe(200);
+      expect(getRes.json().status).toBe('processing');
+      expect(getRes.json().draft).toBeNull();
+    });
+
+    it('GET /profile/import/:draftId is not_found for someone else\'s draft (no leak)', async () => {
+      const owner = await registerAndLogin('import-owner@test.com');
+      const created = await app.inject({
+        method: 'POST', url: '/profile/import', headers: { cookie: owner.cookie },
+        payload: { filename: 'resume.pdf', mimeType: PDF_MIME, fileBase64: 'aGVsbG8=' },
+      });
+      const draftId = created.json().draftId as string;
+
+      const intruder = await registerAndLogin('import-intruder@test.com');
+      const res = await app.inject({ method: 'GET', url: `/profile/import/${draftId}`, headers: { cookie: intruder.cookie } });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('POST /profile/import/:draftId/confirm commits a manually-seeded ready draft into a new CareerProfile', async () => {
+      // The worker (a separate process) is what normally flips a draft to
+      // 'ready' — simulated here by writing directly to the same Redis the
+      // route reads from, which is exactly what RedisDraftStore does.
+      const { cookie, userId } = await registerAndLogin('import-confirm@test.com');
+      const uploadRes = await app.inject({
+        method: 'POST', url: '/profile/import', headers: { cookie },
+        payload: { filename: 'resume.pdf', mimeType: PDF_MIME, fileBase64: 'aGVsbG8=' },
+      });
+      const draftId = uploadRes.json().draftId as string;
+
+      await redis.set(
+        `draft:resume-import:${draftId}`,
+        JSON.stringify({
+          draftId, userId, filename: 'resume.pdf', status: 'ready',
+          draft: { contact: { name: { value: 'Ada', confidence: 0.9 }, email: { value: null, confidence: 0 }, phone: { value: null, confidence: 0 } }, summary: { value: null, confidence: 0 }, sections: [] },
+          error: null, createdAt: new Date().toISOString(),
+        }),
+        'EX', 3600,
+      );
+
+      const confirmRes = await app.inject({
+        method: 'POST', url: `/profile/import/${draftId}/confirm`, headers: { cookie },
+        payload: {
+          sections: [{
+            kind: 'experience',
+            content: { schemaVersion: 1, title: 'Engineer', organization: 'Acme', startDate: '2020-01', endDate: null, bullets: [] },
+          }],
+        },
+      });
+      expect(confirmRes.statusCode).toBe(200);
+      expect(confirmRes.json().sectionsAdded).toBe(1);
+
+      const profileRes = await app.inject({ method: 'GET', url: '/profile', headers: { cookie } });
+      expect(profileRes.statusCode).toBe(200);
+      expect(profileRes.json().sections).toHaveLength(1);
+
+      // The draft is consumed — a second confirm attempt is not_found.
+      const secondConfirm = await app.inject({
+        method: 'POST', url: `/profile/import/${draftId}/confirm`, headers: { cookie },
+        payload: { sections: [{ kind: 'summary', content: { schemaVersion: 1, text: 'x' } }] },
+      });
+      expect(secondConfirm.statusCode).toBe(404);
+    });
+
+    it('confirm rejects a draft that is still processing', async () => {
+      const { cookie } = await registerAndLogin('import-notready@test.com');
+      const uploadRes = await app.inject({
+        method: 'POST', url: '/profile/import', headers: { cookie },
+        payload: { filename: 'resume.pdf', mimeType: PDF_MIME, fileBase64: 'aGVsbG8=' },
+      });
+      const draftId = uploadRes.json().draftId as string;
+
+      const confirmRes = await app.inject({
+        method: 'POST', url: `/profile/import/${draftId}/confirm`, headers: { cookie },
+        payload: { sections: [{ kind: 'summary', content: { schemaVersion: 1, text: 'x' } }] },
+      });
+      expect(confirmRes.statusCode).toBe(409);
+      expect(confirmRes.json().code).toBe('conflict');
     });
   });
 

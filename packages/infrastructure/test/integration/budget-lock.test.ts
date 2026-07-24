@@ -101,8 +101,14 @@ describe('GuardedLlmPort.embed() — task 016, the same proof one layer up throu
       async embed(req) {
         return { ok: true, value: { vector: [0.1, 0.2, 0.3], model: req.model, promptTokens: 1 } };
       },
+      async complete(req) {
+        return { ok: true, value: { text: '{}', model: req.model, promptTokens: 1, completionTokens: 1 } };
+      },
     };
-    const estimator = { estimateEmbedCostUsd: () => 0.0001, actualEmbedCostUsd: () => 0.0001 };
+    const estimator = {
+      estimateEmbedCostUsd: () => 0.0001, actualEmbedCostUsd: () => 0.0001,
+      estimateCompleteCostUsd: () => 0.0001, actualCompleteCostUsd: () => 0.0001,
+    };
     const BUDGET = 0.00035; // same reasoning as the store-level test above: floor(0.00035/0.0001) = 3
 
     const guards = connections.map(

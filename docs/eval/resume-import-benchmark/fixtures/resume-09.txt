@@ -1,0 +1,19 @@
+Liam O'Connor
+liam.oconnor@example.co
++44 20 7946 0958
+
+Profile
+Site reliability engineer with a focus on observability tooling.
+
+Experience
+Site Reliability Engineer — Nimbus Cloud
+January 2019 to June 2023
+▪ Reduced incident MTTR by 55% by building a unified alerting pipeline
+▪ Ran the chaos-engineering program
+
+Education
+University College Dublin, B.Eng Software Engineering
+2014 to 2018
+
+Skills
+Prometheus, Grafana, Go, AWS, Terraform, Datadog

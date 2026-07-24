@@ -11,6 +11,8 @@ import {
   DrizzleDocumentRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
+  BullMqQueuePort,
+  RedisDraftStore,
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
@@ -41,6 +43,8 @@ async function main(): Promise<void> {
   const budgetStore = new PostgresBudgetStore(db);
   const outboxRelay = new OutboxRelay(db, new BullMqOutboxPublisher(redis));
   const jobQueue = new Queue('discovery.job_posted', { connection: redis });
+  const queue = new BullMqQueuePort(redis);
+  const drafts = new RedisDraftStore(redis);
 
   const app = await buildApp({
     db,
@@ -51,6 +55,8 @@ async function main(): Promise<void> {
     applications,
     profiles,
     documents,
+    queue,
+    drafts,
     hasher,
     outboxRelay,
     jobQueue,

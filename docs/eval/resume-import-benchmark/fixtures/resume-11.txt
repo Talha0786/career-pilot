@@ -1,0 +1,35 @@
+Fatima Al-Sayed
+fatima.alsayed@example.io
+917-555-6603
+
+Summary
+Cloud infrastructure lead specializing in multi-region deployments.
+
+Experience
+Principal Infrastructure Engineer at Skyline Systems
+11/2021 - Present
+- Designed the multi-region failover architecture now serving 50M users
+- Cut cloud spend by 30% through right-sizing and reserved capacity
+
+Infrastructure Engineer at Skyline Systems
+04/2018 - 10/2021
+- Migrated the monolith to a service mesh on Kubernetes
+
+DevOps Engineer at Quanta Retail
+06/2015 - 03/2018
+- Automated the CI/CD pipeline, cutting deploy time from hours to minutes
+
+Systems Administrator at Quanta Retail
+08/2013 - 05/2015
+- Managed a fleet of 300+ Linux servers
+
+Licenses and Certifications
+Certified Kubernetes Security Specialist, Cloud Native Computing Foundation
+Google Cloud Professional Architect, Google
+
+Education
+Cairo University, B.S. Computer Engineering
+2009 - 2013
+
+Skills
+Kubernetes, AWS, GCP, Terraform, Istio, Prometheus, Python

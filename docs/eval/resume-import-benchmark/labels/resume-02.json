@@ -1,0 +1,22 @@
+{
+  "id": "resume-02",
+  "notes": "Numeric MM/YYYY dates, semicolon-separated skills, a Projects section, title|org on one line, no Summary. Education line is in 'Credential, Institution' order, which this heuristic parses as institution/credential swapped — a known, honestly-scored limitation (see task 023 evidence).",
+  "fields": {
+    "contact.name": "Marcus Chen",
+    "contact.email": "marcus.chen@mailbox.io",
+    "contact.phone": "415-555-0199",
+    "summary.present": false,
+    "experience.count": 1,
+    "experience.0.title": "Product Engineer",
+    "experience.0.organization": "Globex Inc",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "project.count": 1,
+    "project.0.name": "Open Source Contribution",
+    "project.0.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "Tech Institute",
+    "education.0.credential": "Bachelor of Science in Computer Engineering",
+    "skills.count_min": 5
+  }
+}

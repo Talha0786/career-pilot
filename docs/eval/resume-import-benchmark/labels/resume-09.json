@@ -1,0 +1,19 @@
+{
+  "id": "resume-09",
+  "notes": "Em-dash title/org separator, 'Month YYYY to Month YYYY' dates (word separator, not a hyphen), international phone, apostrophe in surname, square bullet glyph.",
+  "fields": {
+    "contact.name": "Liam O'Connor",
+    "contact.email": "liam.oconnor@example.co",
+    "contact.phone": "44-20-7946-0958",
+    "summary.present": true,
+    "experience.count": 1,
+    "experience.0.title": "Site Reliability Engineer",
+    "experience.0.organization": "Nimbus Cloud",
+    "experience.0.hasDates": true,
+    "experience.0.hasBullets": true,
+    "education.count": 1,
+    "education.0.institution": "University College Dublin",
+    "education.0.credential": "B.Eng Software Engineering",
+    "skills.count_min": 5
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-07-12T15:54:37.657Z",
+  "overallAccuracyPct": 97.58,
+  "totalFields": 207,
+  "totalPassed": 202,
+  "fixtureCount": 12,
+  "perFixture": [
+    {
+      "id": "resume-01",
+      "total": 17,
+      "passed": 17,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-02",
+      "total": 16,
+      "passed": 14,
+      "accuracyPct": 87.5,
+      "failures": [
+        {
+          "field": "education.0.institution",
+          "expected": "Tech Institute",
+          "actual": "Bachelor of Science in Computer Engineering"
+        },
+        {
+          "field": "education.0.credential",
+          "expected": "Bachelor of Science in Computer Engineering",
+          "actual": "Tech Institute"
+        }
+      ]
+    },
+    {
+      "id": "resume-03",
+      "total": 23,
+      "passed": 23,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-04",
+      "total": 11,
+      "passed": 11,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-05",
+      "total": 19,
+      "passed": 19,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-06",
+      "total": 17,
+      "passed": 17,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-07",
+      "total": 17,
+      "passed": 17,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-08",
+      "total": 13,
+      "passed": 13,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-09",
+      "total": 13,
+      "passed": 13,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-10",
+      "total": 14,
+      "passed": 14,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-11",
+      "total": 30,
+      "passed": 30,
+      "accuracyPct": 100,
+      "failures": []
+    },
+    {
+      "id": "resume-12",
+      "total": 17,
+      "passed": 14,
+      "accuracyPct": 82.4,
+      "failures": [
+        {
+          "field": "experience.1.title",
+          "expected": "Software Engineer II",
+          "actual": "Software Engineer II Netflix"
+        },
+        {
+          "field": "experience.1.organization",
+          "expected": "Netflix",
+          "actual": "Unknown organization"
+        },
+        {
+          "field": "skills.count_min",
+          "expected": 5,
+          "actual": 0
+        }
+      ]
+    }
+  ]
+}
