@@ -13,3 +13,4 @@ export * from './auth/argon2-hasher.js';
 export * from './clock/system-clock.js';
 export * from './parsing/index.js';
 export * from './documents/render/index.js';
+export * from './prompts/file-prompt-store.js';

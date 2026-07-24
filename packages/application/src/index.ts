@@ -8,6 +8,7 @@ export * from './ports/queue.port.js';
 export * from './ports/draft-store.port.js';
 export * from './ports/document-renderer.port.js';
 export * from './ports/object-storage.port.js';
+export * from './ports/prompt-store.port.js';
 export * from './auth/use-cases.js';
 export * from './discovery/commands/create-manual-job.js';
 export * from './discovery/commands/embed-job-posting.js';
