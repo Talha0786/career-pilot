@@ -2,6 +2,7 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'e2e'
+  - 'docs/eval'
 
 allowBuilds:
   argon2: true
@@ -23,8 +24,8 @@ overrides:
   # bundles its own old postcss internally; drizzle-kit pulls esbuild via
   # the deprecated @esbuild-kit/* packages. Neither is a direct dependency
   # we control the version of otherwise.
-  postcss: '>=8.5.10'
-  esbuild: '>=0.25.0'
+  postcss: '>=8.5.10 <9.0.0'
+  esbuild: '>=0.25.0 <1.0.0'
   # vite 5.4.21 (pulled in transitively by vitest@3.2.7) has 3 known CVEs
   # (GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff, GHSA-v6wh-96g9-6wx3), fixed
   # in 6.4.3. vitest@3.2.7 only accepts vite ^5 || ^6 || ^7 — capped below
@@ -32,13 +33,16 @@ overrides:
   vite: '>=6.4.3 <7.0.0'
   # M4 lockfile-merge scan (osv-scanner): next@15.5.20 has 7 CVEs, patched
   # in 15.5.21 (within the existing ^15.1.4 range in apps/web, just needed
-  # forcing). sharp is next's own optional dependency (image optimization),
-  # not ours to version otherwise. fast-uri/find-my-way are transitive via
-  # fastify/ajv; two fast-uri major lines (3.x via one consumer, 4.x via
-  # another) both need pinning independently or one override would break
-  # the other's consumer.
-  next: '>=15.5.21'
-  sharp: '>=0.35.0'
-  find-my-way: '>=9.7.0'
+  # forcing) — capped below 16.x for the same reason as vite above: an
+  # unbounded floor drifted to Next 16 (Turbopack-by-default, broke the
+  # existing webpack config) on the very next lockfile regeneration. sharp
+  # is next's own optional dependency (image optimization), not ours to
+  # version otherwise. fast-uri/find-my-way are transitive via fastify/ajv;
+  # two fast-uri major lines (3.x via one consumer, 4.x via another) both
+  # need pinning independently or one override would break the other's
+  # consumer.
+  next: '>=15.5.21 <16.0.0'
+  sharp: '>=0.35.0 <1.0.0'
+  find-my-way: '>=9.7.0 <10.0.0'
   fast-uri@3.1.3: '3.1.4'
   fast-uri@4.1.0: '4.1.1'

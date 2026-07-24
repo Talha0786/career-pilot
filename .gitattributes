@@ -1,0 +1,8 @@
+# Force LF for all text files regardless of the checking-out machine's
+# core.autocrlf setting. Without this, a Windows checkout with
+# core.autocrlf=true silently rewrites LF -> CRLF on checkout, which
+# breaks any test that compares extracted/rendered text byte-for-byte
+# against a committed golden fixture (discovered: task 024's
+# document-render golden-file tests, corrupted this way during a merge
+# checkout even though the committed blobs were correctly LF).
+* text=auto eol=lf

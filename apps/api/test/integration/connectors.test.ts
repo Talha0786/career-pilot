@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import IORedis from 'ioredis';
 import { Queue } from 'bullmq';
 import { sql } from 'drizzle-orm';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   createDb,
   type Db,
@@ -10,8 +13,14 @@ import {
   DrizzleJobPostingRepository,
   DrizzleApplicationRepository,
   DrizzleConnectorConfigRepository,
+  DrizzleProfileRepository,
+  DrizzleDocumentRepository,
   OutboxRelay,
   BullMqOutboxPublisher,
+  BullMqQueuePort,
+  RedisDraftStore,
+  DocumentRenderer,
+  LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
 } from '@careerpilot/infrastructure';
@@ -34,19 +43,23 @@ describe('GET/PATCH /connectors (task 032, real Postgres + Redis)', () => {
   let app: FastifyInstance;
   let jobQueue: Queue;
   let connectorConfigs: DrizzleConnectorConfigRepository;
+  let storageDir: string;
 
   beforeEach(async () => {
     const conn = createDb(TEST_DATABASE_URL);
     db = conn.db;
     closeDb = conn.close;
     await db.execute(
-      sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings, ingestion_runs, connector_configs, users RESTART IDENTITY CASCADE`,
+      sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings,
+        ingestion_runs, connector_configs, document_versions, documents, profile_sections, career_profiles,
+        users RESTART IDENTITY CASCADE`,
     );
 
     redis = new IORedis(TEST_REDIS_URL, { maxRetriesPerRequest: null });
     await redis.flushdb();
     jobQueue = new Queue('discovery.job_posted', { connection: redis });
     connectorConfigs = new DrizzleConnectorConfigRepository(db);
+    storageDir = await mkdtemp(path.join(tmpdir(), 'careerpilot-documents-'));
 
     app = await buildApp({
       db,
@@ -56,6 +69,12 @@ describe('GET/PATCH /connectors (task 032, real Postgres + Redis)', () => {
       jobPostings: new DrizzleJobPostingRepository(db),
       applications: new DrizzleApplicationRepository(db),
       connectorConfigs,
+      profiles: new DrizzleProfileRepository(db),
+      documents: new DrizzleDocumentRepository(db),
+      queue: new BullMqQueuePort(redis),
+      drafts: new RedisDraftStore(redis),
+      renderer: new DocumentRenderer(),
+      storage: new LocalFileObjectStorage(storageDir),
       hasher: new Argon2Hasher(),
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,
@@ -68,6 +87,7 @@ describe('GET/PATCH /connectors (task 032, real Postgres + Redis)', () => {
   afterEach(async () => {
     await app.close();
     await jobQueue.close();
+    await rm(storageDir, { recursive: true, force: true });
     await redis.quit();
     await closeDb();
   });

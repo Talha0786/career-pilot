@@ -15,7 +15,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mapResumeTextToDraft, type ResumeImportDraft } from '../../../packages/application/src/profile/parsing/resume-field-mapper.js';
+import { mapResumeTextToDraft, type ResumeImportDraft } from '@careerpilot/application';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(DIR, 'fixtures');
