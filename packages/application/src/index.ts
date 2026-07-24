@@ -23,6 +23,7 @@ export * from './pipeline/commands/update-stage.js';
 export * from './profile/commands/create-profile.js';
 export * from './profile/commands/update-profile.js';
 export * from './profile/commands/add-section.js';
+export * from './profile/commands/embed-career-profile.js';
 export * from './profile/queries/get-profile.js';
 export * from './documents/commands/create-document.js';
 export * from './documents/commands/add-document-version.js';

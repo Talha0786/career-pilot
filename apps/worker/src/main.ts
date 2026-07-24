@@ -4,6 +4,7 @@ import pino from 'pino';
 import {
   createDb,
   DrizzleJobPostingRepository,
+  DrizzleProfileRepository,
   DrizzleConnectorConfigRepository,
   DrizzleIngestionRunRepository,
   DrizzleUnitOfWork,
@@ -23,6 +24,7 @@ import {
   createUsajobsConnector, createRssConnector, createManualConnector,
 } from '@careerpilot/connectors';
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
+import { createProfileFactsChangedWorker } from './handlers/profile-facts-changed.handler.js';
 import {
   createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
   type RunConnectorIngestionPayload,
@@ -67,6 +69,7 @@ function buildConnectorRegistry(): ConnectorRegistry {
 async function main(): Promise<void> {
   const { db, close: closeDb } = createDb(env.databaseUrl);
   const workerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const profileWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const resumeWorkerConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const relayConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
   const wsPublisher = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
@@ -87,6 +90,18 @@ async function main(): Promise<void> {
     publishWsEvent: async (event) => {
       await wsPublisher.publish('ws:job.embedded', JSON.stringify(event));
     },
+  });
+
+  // Task 035: profile embedding — same outbox → worker → guarded-LLM path as
+  // job postings, consuming `profile.facts_changed` instead of
+  // `discovery.job_posted`.
+  const profiles = new DrizzleProfileRepository(db);
+  const profileWorker = createProfileFactsChangedWorker({
+    connection: profileWorkerConnection,
+    profiles,
+    llm: guardedLlm,
+    embeddingModel: env.llmEmbeddingModel,
+    logger,
   });
 
   // Task 029: scheduler + ingestion pipeline. A connector run reuses the
@@ -150,11 +165,13 @@ async function main(): Promise<void> {
     relayRunning = false;
     await relayLoop;
     await worker.close();
+    await profileWorker.close();
     await connectorIngestionWorker.close();
     await connectorIngestionQueue.close();
     await resumeWorker.close();
     await relayPublisher.closeAll();
     await workerConnection.quit();
+    await profileWorkerConnection.quit();
     await resumeWorkerConnection.quit();
     await relayConnection.quit();
     await wsPublisher.quit();

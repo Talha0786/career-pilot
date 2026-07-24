@@ -8,6 +8,7 @@ export * from './shared/domain-event.js';
 export * from './profile/user.js';
 export * from './profile/profile-section.js';
 export * from './profile/career-profile.js';
+export * from './profile/events.js';
 
 // Documents context
 export * from './documents/document-content.js';
