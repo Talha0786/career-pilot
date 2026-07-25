@@ -97,6 +97,40 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # M7 (task 056) — Streamable HTTP/SSE transport for remote MCP clients.
+  # The stdio transport is invoked directly by desktop clients and is
+  # never a compose service (see apps/mcp-server/src/main-stdio.ts).
+  mcp-server:
+    build:
+      context: .
+      dockerfile: apps/mcp-server/Dockerfile
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MCP_HTTP_PORT: 8090
+      DATABASE_URL: postgresql://${POSTGRES_USER:-careerpilot}:${POSTGRES_PASSWORD:-careerpilot}@postgres:5432/${POSTGRES_DB:-careerpilot}
+      REDIS_URL: redis://redis:6379
+      LLM_BASE_URL: ${DOCKER_LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-llama3.1}
+      LLM_MONTHLY_BUDGET_USD: ${LLM_MONTHLY_BUDGET_USD:-10.00}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '8090:8090'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8090/healthz']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   web:
     build:
       context: .

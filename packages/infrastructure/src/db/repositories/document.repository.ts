@@ -101,6 +101,21 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     }
   }
 
+  /** Task 058. Joins documentVersions -> documents so the ownership check (userId) happens in the same query, never trusting the version row alone. */
+  async findByGenerationJobId(
+    generationJobId: string,
+    userId: ReturnType<typeof asUserId>,
+  ): Promise<Document | null> {
+    const rows = await this.db
+      .select({ doc: documents })
+      .from(documentVersions)
+      .innerJoin(documents, eq(documentVersions.documentId, documents.id))
+      .where(and(eq(documentVersions.generationJobId, generationJobId), eq(documents.userId, userId)))
+      .limit(1);
+    const row = rows[0];
+    return row ? await this.toDomain(row.doc) : null;
+  }
+
   private async toDomain(row: typeof documents.$inferSelect): Promise<Document> {
     const versionRows = await this.db
       .select()

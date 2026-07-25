@@ -48,6 +48,7 @@ export function createTailorDocumentWorker(deps: {
         jobPostingId: job.data.jobPostingId,
         userId: job.data.userId,
         kind: job.data.kind,
+        generationJobId: job.data.generationJobId,
       });
 
       if (!result.ok) {

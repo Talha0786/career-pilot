@@ -24,6 +24,7 @@ import {
   LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
+  McpTokenAdapter,
 } from '@careerpilot/infrastructure';
 import { Document, isOk } from '@careerpilot/domain';
 import { buildApp } from '../../src/app.js';
@@ -70,7 +71,7 @@ describe('POST /documents/:id/versions/:versionId/review (task 041, real Postgre
     db = conn.db;
     closeDb = conn.close;
     await db.execute(
-      sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, match_scores, job_postings,
+      sql`TRUNCATE audit_log, mcp_tokens, interview_preps, application_notes, ai_invocations, outbox, stage_transitions, applications, match_scores, job_postings,
         ingestion_runs, connector_configs, document_versions, documents, profile_sections, career_profiles,
         users RESTART IDENTITY CASCADE`,
     );
@@ -100,6 +101,7 @@ describe('POST /documents/:id/versions/:versionId/review (task 041, real Postgre
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,
       budgetStore: new PostgresBudgetStore(db),
+      mcpTokens: new McpTokenAdapter(db),
       logger: false,
     });
     await app.ready();

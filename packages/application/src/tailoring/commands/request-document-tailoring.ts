@@ -7,9 +7,12 @@ import { TAILOR_DOCUMENT_QUEUE, type TailorDocumentRequestedPayload, type Tailor
 export interface RequestDocumentTailoringInput {
   documentId: string;
   jobPostingId: string;
+  /** Task 058 — when supplied (the MCP `tailor_document` tool always supplies one), threaded onto the payload so `get_generation_status` can poll for it later. */
+  generationJobId?: string | undefined;
 }
 export interface RequestDocumentTailoringOutput {
   queued: true;
+  generationJobId: string | null;
 }
 
 const TAILORABLE_KINDS: readonly TailoringKind[] = ['resume', 'cover_letter'];
@@ -58,9 +61,10 @@ export function makeRequestDocumentTailoringUseCase(deps: {
       jobPostingId: job.id,
       userId: actor.userId,
       kind: doc.kind as TailoringKind,
+      generationJobId: input.generationJobId,
     };
     await deps.queue.enqueue(TAILOR_DOCUMENT_QUEUE, payload as unknown as Record<string, unknown>);
 
-    return ok({ queued: true });
+    return ok({ queued: true, generationJobId: input.generationJobId ?? null });
   };
 }

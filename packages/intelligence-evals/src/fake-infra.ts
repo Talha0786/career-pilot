@@ -129,6 +129,13 @@ export class FakeDocumentRepository implements DocumentRepository {
   async save(document: Document): Promise<void> {
     this.byId.set(document.id, document);
   }
+  async findByGenerationJobId(generationJobId: string, userId: UserId): Promise<Document | null> {
+    for (const doc of this.byId.values()) {
+      if (doc.userId !== userId) continue;
+      if (doc.versions.some((v) => v.generationJobId === generationJobId)) return doc;
+    }
+    return null;
+  }
 }
 
 export class FakeMatchScoreRepository implements MatchScoreRepository {

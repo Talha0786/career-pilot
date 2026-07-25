@@ -5,6 +5,8 @@ export interface UpdateStageInput {
   applicationId: string;
   toStage: Stage;
   reason?: string | undefined;
+  /** Task 058 -- the MCP `update_application_stage` tool passes 'agent' (a token-authenticated MCP call is a non-human actor); the HTTP API route omits this and gets the pre-existing 'user' default, unchanged. */
+  actor?: 'user' | 'system' | 'agent' | undefined;
 }
 export interface UpdateStageOutput {
   applicationId: string;
@@ -31,7 +33,7 @@ export function makeUpdateStageUseCase(deps: { uow: UnitOfWork }) {
         return { ok: false, error: notFound('Application not found') };
       }
 
-      const transitioned = app.transitionTo({ toStage: input.toStage, actor: 'user', reason: input.reason });
+      const transitioned = app.transitionTo({ toStage: input.toStage, actor: input.actor ?? 'user', reason: input.reason });
       if (!transitioned.ok) return transitioned;
 
       await ctx.applications.save(app);

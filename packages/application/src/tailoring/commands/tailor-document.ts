@@ -23,6 +23,8 @@ export interface TailorDocumentRequestedPayload {
   readonly jobPostingId: string;
   readonly userId: string;
   readonly kind: TailoringKind;
+  /** Task 058 — the MCP `tailor_document`/`get_generation_status` polling pair. Threaded onto the resulting DocumentVersion (see `DocumentVersion.generationJobId`, plumbed since task 022 but never previously populated by any producer) so a caller with only this id can find out when generation finishes without needing a live WS connection. Undefined for the pre-existing synchronous-enqueue API route (apps/api/src/routes/documents.ts), which still relies on the WS push — fully backward compatible. */
+  readonly generationJobId?: string | undefined;
 }
 
 export interface TailorDocumentInput {
@@ -31,6 +33,7 @@ export interface TailorDocumentInput {
   jobPostingId: string;
   userId: string;
   kind: TailoringKind;
+  generationJobId?: string | undefined;
 }
 
 export interface TailorDocumentOutput {
@@ -311,6 +314,7 @@ export function makeTailorDocumentUseCase(deps: {
         profileFactsHash: profile.factsHash,
         needsHumanReview,
         flaggedClaims: needsHumanReview ? finalFlaggedClaims : null,
+        generationJobId: input.generationJobId,
       },
     );
     if (!added.ok) return added;
