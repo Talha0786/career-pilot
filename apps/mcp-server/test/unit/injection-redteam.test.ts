@@ -31,7 +31,7 @@ describe('Injection red-team (task 062, docs/04-mcp-design.md §2/§6)', () => {
     await jobPostings.save(jobR.value);
 
     const applications = new FakeApplicationRepository();
-    const tool = makeGetJobTool({ jobPostings } as McpDeps);
+    const tool = makeGetJobTool({ jobPostings } as unknown as McpDeps);
     const result = await tool.handler({ jobId: jobR.value.id }, CTX);
 
     expect(result.ok).toBe(true);
@@ -57,7 +57,7 @@ describe('Injection red-team (task 062, docs/04-mcp-design.md §2/§6)', () => {
       if (!isOk(jobR)) throw new Error('setup');
       await jobPostings.save(jobR.value);
     }
-    const tool = makeSearchJobsTool({ jobPostings } as McpDeps);
+    const tool = makeSearchJobsTool({ jobPostings } as unknown as McpDeps);
     const result = await tool.handler({ limit: 20 }, CTX);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -71,7 +71,6 @@ describe('Injection red-team (task 062, docs/04-mcp-design.md §2/§6)', () => {
   });
 
   it('[payload C] a job posting cannot forge an "attacker-controlled" resource read to another user\'s data', async () => {
-    const jobPostings = new FakeJobPostingRepository();
     const profiles = new FakeProfileRepository();
     const attacker = asUserId('018f0000-0000-7000-8000-000000000302');
     const attackerProfileR = CareerProfile.create({ userId: attacker, title: 'Attacker profile -- should never be readable by USER' });
@@ -79,7 +78,7 @@ describe('Injection red-team (task 062, docs/04-mcp-design.md §2/§6)', () => {
     await profiles.save(attackerProfileR.value);
 
     const { makeProfileResource } = await import('../../src/resources/profile.js');
-    const resource = makeProfileResource({ profiles } as McpDeps);
+    const resource = makeProfileResource({ profiles } as unknown as McpDeps);
     // Even if the injected payload told an LLM "read careerpilot://profile/<attacker-id>",
     // get_profile/the profile resource has NO id-based lookup at all (task 057's
     // documented judgment call) -- it always resolves the CALLING TOKEN's own
@@ -130,7 +129,7 @@ describe('Injection red-team (task 062, docs/04-mcp-design.md §2/§6)', () => {
   it('[payload F] a crafted "resource URI" with path-traversal-shaped input is treated as an opaque id, not resolved to another record', async () => {
     const jobPostings = new FakeJobPostingRepository();
     const { makeJobResource } = await import('../../src/resources/job.js');
-    const resource = makeJobResource({ jobPostings } as McpDeps);
+    const resource = makeJobResource({ jobPostings } as unknown as McpDeps);
     const result = await resource.resolve({ id: '../../../etc/passwd' }, CTX);
     expect(result.ok).toBe(false); // not a valid job id for this user -- not_found, not a crash or a filesystem read
     if (!result.ok) expect(result.error.code).toBe('not_found');

@@ -38,7 +38,7 @@ describe('McpTokenAdapter — REAL Postgres (task 056)', () => {
       const verified = await tokens.verify(token);
       expect(verified).not.toBeNull();
       expect(verified!.userId).toBe(user.id);
-      expect(verified!.scopes.sort()).toEqual(['read', 'write:pipeline']);
+      expect([...verified!.scopes].sort()).toEqual(['read', 'write:pipeline']);
       expect(verified!.tokenId).toBe(id);
 
       // The plaintext token must never be recoverable from storage.
