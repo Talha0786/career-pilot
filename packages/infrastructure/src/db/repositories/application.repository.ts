@@ -18,6 +18,13 @@ export class DrizzleApplicationRepository implements ApplicationRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  /** Task 053 — unscoped lookup for the worker's apply.task_submitted handler (no user in the event payload). */
+  async findByIdAnyOwner(id: ReturnType<typeof asApplicationId>): Promise<Application | null> {
+    const rows = await this.db.select().from(applications).where(eq(applications.id, id)).limit(1);
+    const row = rows[0];
+    return row ? this.toDomain(row) : null;
+  }
+
   async listForUser(userId: ReturnType<typeof asUserId>): Promise<Application[]> {
     const rows = await this.db.select().from(applications).where(eq(applications.userId, userId));
     return rows.map((r) => this.toDomain(r));

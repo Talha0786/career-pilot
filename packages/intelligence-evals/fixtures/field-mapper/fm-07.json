@@ -1,0 +1,10 @@
+{
+  "id": "fm-07",
+  "notes": "Cover letter vs resume upload, both type=file, distinguished only by label context.",
+  "profileFacts": ["f1: Elena Petrova, technical writer"],
+  "formFields": [
+    { "selector": "#f1", "tagName": "input", "type": "file", "name": "f1", "id": "f1", "autocomplete": null, "ariaLabel": null, "labelText": "Primary application document", "placeholder": null },
+    { "selector": "#f2", "tagName": "input", "type": "file", "name": "f2", "id": "f2", "autocomplete": null, "ariaLabel": null, "labelText": "A short note introducing yourself (optional)", "placeholder": null }
+  ],
+  "expected": { "#f1": "resumeUpload", "#f2": "coverLetterUpload" }
+}

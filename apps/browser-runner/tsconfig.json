@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    // DOM types are needed ONLY for typing the closures passed to
+    // Playwright's `page.evaluate()` (heuristic-mapper.ts's
+    // extractFormFields) — those callbacks run inside a real browser page,
+    // not this Node process, but tsc still type-checks their body against
+    // whatever `lib` is configured. Every other app in this monorepo stays
+    // Node-only (tsconfig.base.json's `["ES2023"]`); this override is
+    // scoped to this one package rather than widening the shared base.
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ]
+}

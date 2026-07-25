@@ -4,7 +4,15 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     name: 'unit',
-    include: ['packages/*/src/**/*.test.ts', 'packages/*/test/unit/**/*.test.ts'],
+    // apps/* added in M6 (task 049): browser-runner's field-mapping scoring
+    // logic (heuristic-mapper.ts) is genuine pure business logic that needs
+    // fast unit coverage, unlike apps/api|worker|web which stay thin
+    // composition roots covered by integration tests only (no prior
+    // apps/*/test/unit directory existed before this task).
+    include: [
+      'packages/*/src/**/*.test.ts', 'packages/*/test/unit/**/*.test.ts',
+      'apps/*/src/**/*.test.ts', 'apps/*/test/unit/**/*.test.ts',
+    ],
     environment: 'node',
     coverage: {
       provider: 'v8',

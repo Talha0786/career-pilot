@@ -58,6 +58,12 @@ export const documentVersionSourceEnum = pgEnum('document_version_source', [
   'imported', 'generated', 'edited',
 ]);
 
+// M6 (task 044) — ApplyTask state machine (docs/05-playwright-design.md §3).
+export const applyTaskStageEnum = pgEnum('apply_task_stage', [
+  'draft', 'mapping', 'filling', 'awaiting_review', 'approved',
+  'submitting', 'submitted', 'failed', 'aborted',
+]);
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   email: text('email').notNull(),
@@ -328,6 +334,48 @@ export const matchScores = pgTable('match_scores', {
 }, (t) => ({
   byProfileJob: uniqueIndex('match_scores_profile_job_unique').on(t.profileId, t.jobPostingId),
   byProfile: index('match_scores_profile_idx').on(t.profileId, t.computedAt.desc()),
+}));
+
+/**
+ * M6 (task 044). One row per assisted-application attempt
+ * (docs/05-playwright-design.md §2-3). `documentVersionId` uses
+ * `onDelete: 'restrict'` (not `cascade` like the other FKs here) — a
+ * DocumentVersion is append-only/immutable (task 019/021) and an ApplyTask
+ * referencing one should never silently lose that reference; restricting
+ * delete forces an explicit decision instead.
+ */
+export const applyTasks = pgTable('apply_tasks', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  jobPostingId: uuid('job_posting_id').notNull().references(() => jobPostings.id, { onDelete: 'cascade' }),
+  documentVersionId: uuid('document_version_id').notNull().references(() => documentVersions.id, { onDelete: 'restrict' }),
+  stage: applyTaskStageEnum('stage').notNull().default('draft'),
+  atsAdapter: text('ats_adapter'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byUserUpdated: index('apply_tasks_user_idx').on(t.userId, t.updatedAt.desc()),
+  byApplication: index('apply_tasks_application_idx').on(t.applicationId),
+  byUserStage: index('apply_tasks_user_stage_idx').on(t.userId, t.stage),
+}));
+
+/**
+ * Append-only (task 044 acceptance criterion — same posture as
+ * `stageTransitions`): no `updated_at` column, and no repository built in
+ * this track ever issues an UPDATE/DELETE against this table, only INSERT.
+ */
+export const applyTaskSteps = pgTable('apply_task_steps', {
+  id: uuid('id').primaryKey(),
+  applyTaskId: uuid('apply_task_id').notNull().references(() => applyTasks.id, { onDelete: 'cascade' }),
+  fromStage: applyTaskStageEnum('from_stage'),
+  toStage: applyTaskStageEnum('to_stage').notNull(),
+  action: text('action'),
+  redactedPayload: jsonb('redacted_payload'),
+  screenshotKey: text('screenshot_key'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byTask: index('apply_task_steps_task_idx').on(t.applyTaskId, t.createdAt),
 }));
 
 /** Auth events, credential changes, job creation — security model §6. */

@@ -8,3 +8,4 @@ export * from './outbox.repository.js';
 export * from './connector-config.repository.js';
 export * from './ingestion-run.repository.js';
 export * from './match-score.repository.js';
+export * from './drizzle-apply-task.repository.js';

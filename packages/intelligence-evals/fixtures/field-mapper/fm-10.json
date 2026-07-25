@@ -1,0 +1,11 @@
+{
+  "id": "fm-10",
+  "notes": "Non-English label text (Spanish) for first/last name, no autocomplete/name hints — tests semantic (not keyword) understanding.",
+  "profileFacts": ["f1: Diego Fernandez, civil engineer"],
+  "formFields": [
+    { "selector": "#n1", "tagName": "input", "type": "text", "name": "n1", "id": "n1", "autocomplete": null, "ariaLabel": null, "labelText": "Nombre", "placeholder": null },
+    { "selector": "#n2", "tagName": "input", "type": "text", "name": "n2", "id": "n2", "autocomplete": null, "ariaLabel": null, "labelText": "Apellido", "placeholder": null },
+    { "selector": "#n3", "tagName": "input", "type": "text", "name": "n3", "id": "n3", "autocomplete": null, "ariaLabel": null, "labelText": "Correo electrónico", "placeholder": null }
+  ],
+  "expected": { "#n1": "firstName", "#n2": "lastName", "#n3": "email" }
+}

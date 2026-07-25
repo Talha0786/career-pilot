@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- SYNTHETIC fixture, structurally representative of Workday's
+     well-documented data-automation-id convention — hand-built, not
+     scraped. See greenhouse/application-form.html's header comment for
+     why. -->
+<html>
+  <head><title>Acme Corp — Software Engineer</title></head>
+  <body>
+    <div data-automation-id="applyFlowPage">
+      <form data-automation-id="applyFlowForm" action="/wday/apply/12345">
+        <div data-automation-id="legalNameSection_firstName">
+          <label>First Name</label>
+          <input data-automation-id="legalNameSection_firstName_input" name="firstName" type="text" />
+        </div>
+        <div data-automation-id="legalNameSection_lastName">
+          <label>Last Name</label>
+          <input data-automation-id="legalNameSection_lastName_input" name="lastName" type="text" />
+        </div>
+        <div data-automation-id="email">
+          <label>Email</label>
+          <input data-automation-id="email_input" name="email" type="email" />
+        </div>
+        <div data-automation-id="phone-number">
+          <label>Phone</label>
+          <input data-automation-id="phone-number_input" name="phone" type="tel" />
+        </div>
+        <div data-automation-id="file-upload-drop-zone">
+          <label>Resume</label>
+          <input data-automation-id="file-upload-input" name="resume" type="file" />
+        </div>
+        <div data-automation-id="workAuthorization">
+          <label>Are you legally authorized to work?</label>
+          <input type="radio" data-automation-id="workAuthorization_yes" name="workAuthorization" value="yes" />
+          <input type="radio" data-automation-id="workAuthorization_no" name="workAuthorization" value="no" />
+        </div>
+        <div data-automation-id="sponsorshipRequired">
+          <label>Will you now or in the future require sponsorship?</label>
+          <input type="radio" data-automation-id="sponsorshipRequired_yes" name="sponsorshipRequired" value="yes" />
+          <input type="radio" data-automation-id="sponsorshipRequired_no" name="sponsorshipRequired" value="no" />
+        </div>
+        <div data-automation-id="gender">
+          <label>Gender</label>
+          <select data-automation-id="gender_input" name="gender"><option value="">Select</option></select>
+        </div>
+        <div data-automation-id="veteranStatus">
+          <label>Veteran Status</label>
+          <select data-automation-id="veteranStatus_input" name="veteranStatus"><option value="">Select</option></select>
+        </div>
+        <button type="submit" data-automation-id="bottom-navigation-next-button">Next</button>
+      </form>
+    </div>
+  </body>
+</html>

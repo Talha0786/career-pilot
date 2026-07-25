@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  SYNTHETIC fixture, structurally representative of Greenhouse's
+  well-documented public embed conventions (container id="grnhse_app",
+  form id="application-form", underscored field ids) — NOT a scrape of any
+  real employer's branded job page (task 048's own instruction). Built by
+  hand for this test suite; honestly disclosed as such rather than claimed
+  as a "recorded" snapshot, since this sandbox has no network access to
+  record a real one.
+-->
+<html>
+  <head><title>Acme Corp — Software Engineer</title></head>
+  <body>
+    <div id="grnhse_app">
+      <form id="application-form" class="application--form" action="/jobs/12345/submit">
+        <div class="field"><label for="first_name">First Name</label><input id="first_name" name="job_application[first_name]" type="text" /></div>
+        <div class="field"><label for="last_name">Last Name</label><input id="last_name" name="job_application[last_name]" type="text" /></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="job_application[email]" type="email" /></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" name="job_application[phone]" type="tel" /></div>
+        <div class="field"><label for="resume">Resume/CV</label><input id="resume" name="job_application[resume]" type="file" /></div>
+        <div class="field"><label for="cover_letter">Cover Letter</label><input id="cover_letter" name="job_application[cover_letter]" type="file" /></div>
+        <div class="field"><label for="job_application_answers_attributes_0_text_value">LinkedIn Profile</label><input id="job_application_answers_attributes_0_text_value" type="text" /></div>
+        <div class="field">
+          <label>Are you legally authorized to work in this country?</label>
+          <input type="radio" id="work_authorization_yes" name="work_authorization" value="yes" />
+          <input type="radio" id="work_authorization_no" name="work_authorization" value="no" />
+        </div>
+        <div class="field eeo-question">
+          <label for="eeo_gender">Gender</label>
+          <select id="eeo_gender" name="job_application[gender]">
+            <option value="">Please select</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="decline">Decline to self-identify</option>
+          </select>
+        </div>
+        <div class="field eeo-question">
+          <label for="eeo_race">Race/Ethnicity</label>
+          <select id="eeo_race" name="job_application[race]"><option value="">Please select</option></select>
+        </div>
+        <button type="submit" id="submit_app">Submit Application</button>
+      </form>
+    </div>
+  </body>
+</html>

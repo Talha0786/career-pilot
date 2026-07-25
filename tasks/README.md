@@ -68,18 +68,18 @@ Every task file (`NNN.md`) has exactly these sections:
 | [041](041.md) | Diff-review UI (web) | M5 | DONE |
 | [042](042.md) | Intelligence eval harness (nightly CI gate) | M5 | DONE |
 | [043](043.md) | Budget hard-stop proof (chaos/integration test) | M5 | DONE |
-| [044](044.md) | Schema: apply_tasks, apply_task_steps | M6 | TODO |
-| [045](045.md) | Domain: ApplyTask aggregate + state machine | M6 | TODO |
-| [046](046.md) | Approval token port (single-use, 5-min TTL) | M6 | TODO |
-| [047](047.md) | apps/browser-runner scaffold + Playwright + internal task API | M6 | TODO |
-| [048](048.md) | Known-ATS field maps (Greenhouse, Lever, Ashby, Workday) | M6 | TODO |
-| [049](049.md) | Heuristic field detection | M6 | TODO |
-| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | TODO |
-| [051](051.md) | Mapping/filling orchestration + document-attachment gate | M6 | TODO |
-| [052](052.md) | Screencast + batch review queue UI | M6 | TODO |
-| [053](053.md) | Submit path: exactly-once via approval token | M6 | TODO |
-| [054](054.md) | mock-ATS e2e fixture app + Playwright e2e | M6 | TODO |
-| [055](055.md) | Degradation ladder + copy-paste-assist mode | M6 | TODO |
+| [044](044.md) | Schema: apply_tasks, apply_task_steps | M6 | DONE |
+| [045](045.md) | Domain: ApplyTask aggregate + state machine | M6 | DONE |
+| [046](046.md) | Approval token port (single-use, 5-min TTL) | M6 | DONE |
+| [047](047.md) | apps/browser-runner scaffold + Playwright + internal task API | M6 | DONE |
+| [048](048.md) | Known-ATS field maps (Greenhouse, Lever, Ashby, Workday) | M6 | DONE |
+| [049](049.md) | Heuristic field detection | M6 | DONE |
+| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | IN PROGRESS (pipeline done; eval not run — no LLM reachable in sandbox) |
+| [051](051.md) | Mapping/filling orchestration + document-attachment gate | M6 | DONE |
+| [052](052.md) | Screencast + batch review queue UI | M6 | IN PROGRESS (API + UI done; screencast + live field-diff wiring deferred) |
+| [053](053.md) | Submit path: exactly-once via approval token | M6 | DONE |
+| [054](054.md) | mock-ATS e2e fixture app + Playwright e2e | M6 | DONE |
+| [055](055.md) | Degradation ladder + copy-paste-assist mode | M6 | DONE |
 | [056](056.md) | apps/mcp-server scaffold + transports + bearer-token auth | M7 | TODO |
 | [057](057.md) | Read-only MCP tools | M7 | TODO |
 | [058](058.md) | Write MCP tools (never-submit boundary) | M7 | TODO |

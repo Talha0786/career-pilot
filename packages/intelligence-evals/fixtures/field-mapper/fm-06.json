@@ -1,0 +1,10 @@
+{
+  "id": "fm-06",
+  "notes": "LinkedIn vs generic portfolio, both plain URL text inputs distinguished only by label wording.",
+  "profileFacts": ["f1: Noah Kim, sales engineer"],
+  "formFields": [
+    { "selector": "#u1", "tagName": "input", "type": "text", "name": "u1", "id": "u1", "autocomplete": null, "ariaLabel": null, "labelText": "Professional network profile link", "placeholder": null },
+    { "selector": "#u2", "tagName": "input", "type": "text", "name": "u2", "id": "u2", "autocomplete": null, "ariaLabel": null, "labelText": "Any other link you'd like to share (site, GitHub, etc.)", "placeholder": null }
+  ],
+  "expected": { "#u1": "linkedinUrl", "#u2": "portfolioUrl" }
+}

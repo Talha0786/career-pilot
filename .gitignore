@@ -15,3 +15,9 @@ backups/
 # results are point-in-time evidence attached to a task/commit message or a
 # nightly CI artifact, not a file that should grow/churn in git history.
 packages/intelligence-evals/results/
+
+# Task 047/054: Playwright's own run artifacts (screenshots, traces, HTML
+# reports) — regenerated on every run, never something to commit.
+test-results/
+playwright-report/
+blob-report/

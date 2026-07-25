@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- SYNTHETIC fixture, structurally representative of Lever's public embed
+     conventions (data-qa attributes, "posting-btn-submit" submit wrapper) —
+     hand-built, not scraped. See greenhouse/application-form.html's header
+     comment for why. -->
+<html>
+  <head><title>Acme Corp — Software Engineer</title></head>
+  <body>
+    <div class="application-page">
+      <form class="application-form" data-qa="application-form" action="/apply/12345">
+        <div class="application-field">
+          <label>First Name</label>
+          <input data-qa="input-first-name" name="first_name" type="text" />
+        </div>
+        <div class="application-field">
+          <label>Last Name</label>
+          <input data-qa="input-last-name" name="last_name" type="text" />
+        </div>
+        <div class="application-field">
+          <label>Email</label>
+          <input data-qa="input-email" name="email" type="email" />
+        </div>
+        <div class="application-field">
+          <label>Phone</label>
+          <input data-qa="input-phone" name="phone" type="tel" />
+        </div>
+        <div class="application-field">
+          <label>Resume/CV</label>
+          <input data-qa="input-resume" name="resume" type="file" />
+        </div>
+        <div class="application-field">
+          <label>LinkedIn URL</label>
+          <input data-qa="input-urls_linkedin" name="urls[LinkedIn]" type="text" />
+        </div>
+        <div class="application-field">
+          <label>Portfolio</label>
+          <input data-qa="input-urls_portfolio" name="urls[Portfolio]" type="text" />
+        </div>
+        <div class="application-field eeo-field">
+          <label>Gender</label>
+          <select data-qa="select-eeo-gender" name="eeo[gender]">
+            <option value="">Select</option>
+          </select>
+        </div>
+        <div class="application-field eeo-field">
+          <label>Veteran Status</label>
+          <select data-qa="select-eeo-veteran" name="eeo[veteran]">
+            <option value="">Select</option>
+          </select>
+        </div>
+        <div class="posting-btn-submit">
+          <button type="submit" data-qa="btn-submit">Submit application</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

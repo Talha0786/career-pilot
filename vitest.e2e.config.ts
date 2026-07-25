@@ -10,7 +10,13 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     name: 'e2e',
-    include: ['e2e/**/*.spec.ts'],
+    // Scoped to chaos/ specifically (not 'e2e/**/*.spec.ts') — task 054 adds
+    // e2e/apply-flow.spec.ts, a PLAYWRIGHT spec (imports from
+    // '@playwright/test', run via `playwright test`, its own config at
+    // e2e/playwright.config.ts) that vitest must never try to collect; a
+    // broader glob here would silently attempt to run it as a vitest file
+    // and fail on the mismatched test API.
+    include: ['e2e/chaos/**/*.spec.ts'],
     environment: 'node',
     testTimeout: 60_000,
     hookTimeout: 60_000,

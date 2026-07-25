@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  Task 049 heuristic-mapper corpus. HONEST SCOPE NOTE (see task 049's
+  Status entry for the full disclosure): this sandbox has no network
+  access to scrape/collect real third-party application forms, so this is
+  a hand-built SYNTHETIC corpus of 14 distinct form snapshots (not the
+  "100+" the task file names as an aspiration — which itself says "if 100
+  genuinely distinct real-world forms aren't practically obtainable,
+  document the actual corpus size honestly rather than padding"), covering
+  a deliberately wide variety of real-world naming conventions (Workday-,
+  iCIMS-, Taleo-, BambooHR-, SmartRecruiters-style field naming, plus
+  label-only / aria-only / placeholder-only variants, decoy fields that
+  must NOT map to anything, and EEO fields disguised under several
+  different real phrasings). Consolidated into ONE file (multiple <form>
+  sections) rather than 14 separate files, for iteration speed — a
+  pragmatic deviation from the task file's literal "*.html" (plural files)
+  phrasing, noted here rather than silently done.
+
+  `data-expect="<taxonomyKey>"` / `data-expect="none"` are TEST-ONLY
+  annotations (never read by production code) the spec file
+  (heuristic-mapper.spec.ts) uses as ground truth for precision/recall.
+-->
+<html>
+<head><title>Heuristic mapper corpus</title></head>
+<body>
+
+<!-- 1: Workday-style data-automation-id naming -->
+<form id="form-1">
+  <label for="f1-first">Legal First Name</label><input id="f1-first" name="firstName" data-expect="firstName" />
+  <label for="f1-last">Legal Last Name</label><input id="f1-last" name="lastName" data-expect="lastName" />
+  <label for="f1-email">Email Address</label><input id="f1-email" name="email" type="email" data-expect="email" />
+  <label for="f1-phone">Phone Number</label><input id="f1-phone" name="phoneNumber" type="tel" data-expect="phone" />
+  <label for="f1-resume">Resume</label><input id="f1-resume" name="resumeFile" type="file" data-expect="resumeUpload" />
+</form>
+
+<!-- 2: iCIMS-style underscored ids -->
+<form id="form-2">
+  <label for="icims_first_name">First Name</label><input id="icims_first_name" data-expect="firstName" />
+  <label for="icims_last_name">Last Name</label><input id="icims_last_name" data-expect="lastName" />
+  <label for="icims_email_address">E-mail</label><input id="icims_email_address" type="email" data-expect="email" />
+  <label for="icims_mobile_phone">Mobile Phone</label><input id="icims_mobile_phone" data-expect="phone" />
+  <label for="icims_referral">Referral Code</label><input id="icims_referral" data-expect="none" />
+</form>
+
+<!-- 3: Taleo-style camelCase names, no ids -->
+<form id="form-3">
+  <label>First Name</label><input name="candidateFirstName" data-expect="firstName" />
+  <label>Last Name</label><input name="candidateLastName" data-expect="lastName" />
+  <label>Email</label><input name="candidateEmail" type="email" data-expect="email" />
+  <label>Desired Salary</label><input name="desiredSalary" data-expect="none" />
+  <label>Start Date</label><input name="availableStartDate" type="date" data-expect="none" />
+</form>
+
+<!-- 4: BambooHR-style, autocomplete attributes present (strongest signal) -->
+<form id="form-4">
+  <input id="bh-fname" autocomplete="given-name" data-expect="firstName" />
+  <input id="bh-lname" autocomplete="family-name" data-expect="lastName" />
+  <input id="bh-email" autocomplete="email" type="email" data-expect="email" />
+  <input id="bh-tel" autocomplete="tel" type="tel" data-expect="phone" />
+</form>
+
+<!-- 5: aria-label only (no visible label, no name/id keyword) -->
+<form id="form-5">
+  <input id="q1" aria-label="Email address" type="email" data-expect="email" />
+  <input id="q2" aria-label="Phone number" type="tel" data-expect="phone" />
+  <input id="q3" aria-label="LinkedIn profile URL" data-expect="linkedinUrl" />
+</form>
+
+<!-- 6: placeholder only -->
+<form id="form-6">
+  <input id="p1" placeholder="Your first name" data-expect="firstName" />
+  <input id="p2" placeholder="Your last name" data-expect="lastName" />
+  <input id="p3" placeholder="you@example.com" type="email" data-expect="email" />
+</form>
+
+<!-- 7: SmartRecruiters-style, resume + cover letter both file inputs -->
+<form id="form-7">
+  <label for="sr-resume">Upload your CV</label><input id="sr-resume" type="file" data-expect="resumeUpload" />
+  <label for="sr-cover">Upload a cover letter (optional)</label><input id="sr-cover" type="file" data-expect="coverLetterUpload" />
+  <label for="sr-portfolio">Portfolio / personal website</label><input id="sr-portfolio" data-expect="portfolioUrl" />
+</form>
+
+<!-- 8: work authorization + sponsorship, radio groups -->
+<form id="form-8">
+  <label>Are you legally authorized to work in this country?</label>
+  <input type="radio" name="work_auth" value="yes" data-expect="workAuthorization" />
+  <input type="radio" name="work_auth" value="no" data-expect="workAuthorization" />
+  <label>Will you now or in the future require visa sponsorship?</label>
+  <input type="radio" name="sponsorship" value="yes" data-expect="sponsorshipRequired" />
+  <input type="radio" name="sponsorship" value="no" data-expect="sponsorshipRequired" />
+</form>
+
+<!-- 9: EEO fields disguised as "self-identification" (real-world common phrasing) -->
+<form id="form-9">
+  <label for="si-gender">Gender Identity (voluntary self-identification)</label>
+  <select id="si-gender" data-expect="eeoGender" data-sensitive="true"><option>Select</option></select>
+  <label for="si-race">Race/Ethnicity (voluntary self-identification)</label>
+  <select id="si-race" data-expect="eeoRace" data-sensitive="true"><option>Select</option></select>
+  <label for="si-vet">Protected Veteran Status</label>
+  <select id="si-vet" data-expect="eeoVeteranStatus" data-sensitive="true"><option>Select</option></select>
+  <label for="si-dis">Disability Accommodation Status</label>
+  <select id="si-dis" data-expect="eeoDisabilityStatus" data-sensitive="true"><option>Select</option></select>
+</form>
+
+<!-- 10: decoy fields whose labels superficially resemble sensitive topics but AREN'T EEO questions -->
+<form id="form-10">
+  <label for="d1">What is your race pace (5k time, for our running club)?</label>
+  <input id="d1" name="racePace" data-expect="none" />
+  <label for="d2">Preferred pronouns for team intros (optional, NOT an EEO question)</label>
+  <input id="d2" name="pronouns" data-expect="none" />
+  <label for="d3">Message to hiring manager</label>
+  <textarea id="d3" name="message" data-expect="none"></textarea>
+</form>
+
+<!-- 11: how did you hear about us + generic select -->
+<form id="form-11">
+  <label for="hdyh">How did you hear about this position?</label>
+  <select id="hdyh" name="referral_source" data-expect="howDidYouHear"><option>Select</option></select>
+  <label for="notes">Additional notes</label>
+  <textarea id="notes" name="notes" data-expect="none"></textarea>
+</form>
+
+<!-- 12: mixed-case fuzzy name/id matches (contains keyword but not exact token) -->
+<form id="form-12">
+  <input id="applicant_first_name_field" data-expect="firstName" />
+  <input id="applicant_last_name_field" data-expect="lastName" />
+  <input id="applicant_email_field" type="email" data-expect="email" />
+  <input id="applicant_phone_field" type="tel" data-expect="phone" />
+  <input id="applicant_cover_letter_upload_field" type="file" data-expect="coverLetterUpload" />
+</form>
+
+<!-- 13: minimal/sparse form — only a subset of P0 fields present -->
+<form id="form-13">
+  <label for="min-email">Email</label><input id="min-email" type="email" data-expect="email" />
+  <label for="min-resume">Attach resume</label><input id="min-resume" type="file" data-expect="resumeUpload" />
+</form>
+
+<!-- 14: French-labeled but English name/id attributes (autocomplete + name still resolve; label text won't match English patterns — tests that name/id signal alone is sufficient) -->
+<form id="form-14">
+  <label for="fr-first">Prénom</label><input id="fr-first" name="firstName" autocomplete="given-name" data-expect="firstName" />
+  <label for="fr-last">Nom de famille</label><input id="fr-last" name="lastName" autocomplete="family-name" data-expect="lastName" />
+  <label for="fr-email">Courriel</label><input id="fr-email" name="email" type="email" autocomplete="email" data-expect="email" />
+</form>
+
+</body>
+</html>

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@careerpilot/application": "workspace:*",
+    "@careerpilot/browser-runner": "workspace:*",
     "@careerpilot/domain": "workspace:*",
     "@careerpilot/infrastructure": "workspace:*",
     "bullmq": "^5.34.0",
@@ -15,6 +16,7 @@
     "ioredis": "^5.11.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.2",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"

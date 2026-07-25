@@ -11,6 +11,7 @@ import {
   DrizzleUserRepository,
   DrizzleConnectorConfigRepository,
   DrizzleIngestionRunRepository,
+  DrizzleApplicationRepository,
   DrizzleUnitOfWork,
   SystemClock,
   OutboxRelay,
@@ -33,6 +34,7 @@ import {
 import { createJobPostedWorker } from './handlers/job-posted.handler.js';
 import { createProfileFactsChangedWorker } from './handlers/profile-facts-changed.handler.js';
 import { createScoreMatchWorker } from './handlers/score-match.handler.js';
+import { createApplyTaskSubmittedWorker } from './handlers/apply-task-submitted.handler.js';
 import { createTailorDocumentWorker } from './handlers/tailor-document.handler.js';
 import {
   createRunConnectorIngestionWorker, scheduleConnectorIngestions, CONNECTOR_INGESTION_QUEUE,
@@ -223,6 +225,17 @@ async function main(): Promise<void> {
     logger,
   });
 
+  // Task 053: apply.task_submitted → Application.applied. Reuses
+  // workerConnection's sibling pattern (a dedicated connection per worker,
+  // same as every other handler above).
+  const applyTaskSubmittedConnection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+  const applications = new DrizzleApplicationRepository(db);
+  const applyTaskSubmittedWorker = createApplyTaskSubmittedWorker({
+    connection: applyTaskSubmittedConnection,
+    applications,
+    logger,
+  });
+
   const relayPublisher = new BullMqOutboxPublisher(relayConnection);
   const relay = new OutboxRelay(db, relayPublisher, env.outboxMaxAttempts);
 
@@ -253,6 +266,8 @@ async function main(): Promise<void> {
     await connectorIngestionWorker.close();
     await connectorIngestionQueue.close();
     await resumeWorker.close();
+    await applyTaskSubmittedWorker.close();
+    await applyTaskSubmittedConnection.quit();
     await relayPublisher.closeAll();
     await workerConnection.quit();
     await profileWorkerConnection.quit();

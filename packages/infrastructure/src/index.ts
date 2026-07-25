@@ -10,6 +10,7 @@ export * from './llm/postgres-budget-store.js';
 export * from './llm/pricing-table.js';
 export * from './llm/cost-estimator.js';
 export * from './auth/argon2-hasher.js';
+export * from './auth/redis-approval-token.adapter.js';
 export * from './clock/system-clock.js';
 export * from './parsing/index.js';
 export * from './documents/render/index.js';
