@@ -2,30 +2,37 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppHeader, Alert, Spinner } from '@careerpilot/ui';
+import { AppHeader, Alert, Spinner, Card, CardContent } from '@careerpilot/ui';
 import { api, ApiError } from '@/lib/api-client';
-import { applyApi, type ApplyTaskListItem } from '@/lib/api/apply';
+import { applyApi, type ApplyTaskListItem, type ApplyTaskFieldDiffEntry } from '@/lib/api/apply';
 import { ApplyReviewCard } from '@/components/ApplyReviewCard';
+import { FieldDiffView } from '@/components/FieldDiffView';
 
 /**
  * Task 052 — the batch review queue (ADR-003): lists every `awaiting_review`
- * ApplyTask for the user, lets them approve (mints a fresh single-use
- * token, then immediately submits) or reject each one individually.
+ * ApplyTask for the user, lets them expand each one to see the REAL
+ * field-level diff (`GET /apply-tasks/:id/fields`, task 052's follow-up —
+ * see `FieldDiffView`'s own doc comment for the full data-flow story) before
+ * approving (mints a fresh single-use token, then immediately submits) or
+ * rejecting.
  *
- * SCOPE NOTE: does not yet render `FieldDiffView` — see that component's
- * own doc comment for why (no live per-field diff read endpoint exists
- * yet). Does not render a live CDP screencast — building the CDP capture
- * pipeline (`apps/browser-runner/src/screencast.ts`) + Redis pub/sub +
- * WS relay was judged lower-value than the mapping/filling/submit
- * correctness work within this milestone's time budget; documented here
- * rather than silently omitted. `updatedAt` is shown instead as a
- * lightweight proxy for "is this task still active."
+ * SCOPE NOTE (still real, still honest): no live CDP screencast — building
+ * the CDP capture pipeline (`apps/browser-runner/src/screencast.ts`) + Redis
+ * pub/sub + WS relay was judged lower-value than the field-diff correctness
+ * work within this milestone's time budget. The field diff itself IS live
+ * (reads the actual current DOM state of the open browser-runner page for
+ * every non-sensitive field), which is the part ADR-003 actually requires
+ * ("a human must review a field-level diff") — visual monitoring is a
+ * lesser gap than no diff data.
  */
 export default function ApplyReviewPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<ApplyTaskListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fields, setFields] = useState<ApplyTaskFieldDiffEntry[] | null>(null);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -47,6 +54,25 @@ export default function ApplyReviewPage() {
     })();
   }, [router, load]);
 
+  async function handleExpand(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      setFields(null);
+      return;
+    }
+    setExpandedId(id);
+    setFields(null);
+    setFieldsLoading(true);
+    try {
+      const res = await applyApi.fields(id);
+      setFields(res.fields);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.problem.message : 'Could not load field diff');
+    } finally {
+      setFieldsLoading(false);
+    }
+  }
+
   async function handleApprove(id: string) {
     setBusyId(id);
     setError(null);
@@ -56,6 +82,7 @@ export default function ApplyReviewPage() {
       const { token } = await applyApi.approve(id);
       await applyApi.submit(id, token);
       setTasks((prev) => prev?.filter((t) => t.id !== id) ?? null);
+      if (expandedId === id) { setExpandedId(null); setFields(null); }
     } catch (err) {
       setError(err instanceof ApiError ? err.problem.message : 'Approve/submit failed');
     } finally {
@@ -69,6 +96,7 @@ export default function ApplyReviewPage() {
     try {
       await applyApi.reject(id);
       setTasks((prev) => prev?.filter((t) => t.id !== id) ?? null);
+      if (expandedId === id) { setExpandedId(null); setFields(null); }
     } catch (err) {
       setError(err instanceof ApiError ? err.problem.message : 'Reject failed');
     } finally {
@@ -84,13 +112,24 @@ export default function ApplyReviewPage() {
         {tasks === null && <Spinner />}
         {tasks !== null && tasks.length === 0 && <p>Nothing waiting for review right now.</p>}
         {tasks?.map((task) => (
-          <ApplyReviewCard
-            key={task.id}
-            task={task}
-            busy={busyId === task.id}
-            onApprove={() => handleApprove(task.id)}
-            onReject={() => handleReject(task.id)}
-          />
+          <div key={task.id}>
+            <ApplyReviewCard
+              task={task}
+              busy={busyId === task.id}
+              onApprove={() => handleApprove(task.id)}
+              onReject={() => handleReject(task.id)}
+              onToggleDetails={() => handleExpand(task.id)}
+              detailsOpen={expandedId === task.id}
+            />
+            {expandedId === task.id && (
+              <Card>
+                <CardContent>
+                  {fieldsLoading && <Spinner />}
+                  {!fieldsLoading && fields && <FieldDiffView entries={fields} />}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         ))}
       </main>
     </div>

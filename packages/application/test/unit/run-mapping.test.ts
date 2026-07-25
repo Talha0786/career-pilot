@@ -61,7 +61,7 @@ describe('runMapping — draft → mapping (task 051)', () => {
     const task = await seedDraftTask(applyTasks);
     fieldDetection.result = {
       atsAdapter: 'greenhouse', atsAdapterVersion: '2026.07.1',
-      detected: [{ selector: '#email', taxonomyKey: 'email', confidence: 0.95, neverAutoFill: false }],
+      detected: [{ selector: '#email', taxonomyKey: 'email', confidence: 0.95, neverAutoFill: false, source: 'known_ats' }],
       allFields: [{ selector: '#email', tagName: 'input', type: 'email', name: 'email', id: 'email', autocomplete: null, ariaLabel: null, labelText: null, placeholder: null }],
     };
 
@@ -143,7 +143,7 @@ describe('runMapping — draft → mapping (task 051)', () => {
     const task = await seedDraftTask(applyTasks);
     fieldDetection.result = {
       atsAdapter: 'greenhouse', atsAdapterVersion: 'v1',
-      detected: [{ selector: '#eeo_gender', taxonomyKey: 'eeoGender', confidence: 0, neverAutoFill: true }],
+      detected: [{ selector: '#eeo_gender', taxonomyKey: 'eeoGender', confidence: 0, neverAutoFill: true, source: 'known_ats' }],
       allFields: [],
     };
     const result = await useCase({ userId: USER, applyTaskId: task.id, profileFactsText: 'f1', allowEssayDrafting: false });

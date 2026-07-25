@@ -6,7 +6,7 @@ import type {
   UserRepository, JobPostingRepository, ApplicationRepository,
   OutboxPort, UnitOfWork, TransactionContext, HasherPort, DedupCandidate,
   ConnectorConfigRepository, ConnectorConfig, IngestionRunRepository, IngestionRun, IngestionRunStats,
-  ProfileRepository, DocumentRepository, MatchScoreRepository, ApplyTaskRepository,
+  ProfileRepository, DocumentRepository, MatchScoreRepository, ApplyTaskRepository, ApplyTaskStepRecord,
 } from '../src/ports/repositories.js';
 import { DEGRADED_AFTER_CONSECUTIVE_FAILURES, DISABLED_AFTER_CONSECUTIVE_FAILURES } from '../src/discovery/commands/update-connector-health.js';
 import type { AuditPort, AuditRecord } from '../src/ports/audit.port.js';
@@ -154,6 +154,7 @@ export class FakeMatchScoreRepository implements MatchScoreRepository {
 
 export class FakeApplyTaskRepository implements ApplyTaskRepository {
   private byId = new Map<string, ApplyTask>();
+  private steps = new Map<string, ApplyTaskStepRecord[]>();
   public saveCount = 0;
   /** Drained domain events, in save-call order — mirrors DrizzleApplyTaskRepository's outbox drain (task 053 asserts against this). */
   public emittedEvents: { eventType: string; aggregateType: string; aggregateId: string; payload: unknown }[] = [];
@@ -170,9 +171,20 @@ export class FakeApplyTaskRepository implements ApplyTaskRepository {
   }
   async save(task: ApplyTask): Promise<void> {
     this.saveCount += 1;
-    task.pullSteps(); // drain, same "save persists+drains" contract as the real repository
+    const drainedSteps = task.pullSteps(); // drain, same "save persists+drains" contract as the real repository
+    const existing = this.steps.get(task.id) ?? [];
+    this.steps.set(task.id, [
+      ...existing,
+      ...drainedSteps.map((s) => ({
+        fromStage: s.fromStage, toStage: s.toStage, action: s.action,
+        redactedPayload: s.redactedPayload, screenshotKey: s.screenshotKey, createdAt: s.occurredAt,
+      })),
+    ]);
     this.emittedEvents.push(...task.pullEvents());
     this.byId.set(task.id, task);
+  }
+  async listSteps(id: ApplyTaskId): Promise<ApplyTaskStepRecord[]> {
+    return this.steps.get(id) ?? [];
   }
 }
 

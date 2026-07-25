@@ -38,6 +38,15 @@ export interface DetectedField {
   readonly taxonomyKey: TaxonomyFieldKey;
   readonly confidence: number;
   readonly neverAutoFill: boolean;
+  /**
+   * Task 052 — which pipeline stage (048/049/050) actually resolved this
+   * field, threaded through explicitly from each stage rather than
+   * inferred later from a confidence-score heuristic (which would be
+   * ambiguous — an LLM match and a heuristic match can land in the same
+   * confidence band). This is what the review-queue's field diff shows
+   * the user as "how was this value decided."
+   */
+  readonly source: 'known_ats' | 'heuristic' | 'llm';
 }
 
 export interface FieldDetectionResult {

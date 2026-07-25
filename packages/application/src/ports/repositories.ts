@@ -213,11 +213,23 @@ export interface MatchScoreRepository {
  * (task 047) and worker handlers, which act on behalf of a task, not a
  * logged-in HTTP user.
  */
+/** Task 052 — a persisted `apply_task_steps` row, read-side projection (append-only, never mutated — see migration 0007). */
+export interface ApplyTaskStepRecord {
+  readonly fromStage: string | null;
+  readonly toStage: string;
+  readonly action: string | null;
+  readonly redactedPayload: Record<string, unknown> | null;
+  readonly screenshotKey: string | null;
+  readonly createdAt: Date;
+}
+
 export interface ApplyTaskRepository {
   findByIdForUser(id: ApplyTaskId, userId: UserId): Promise<ApplyTask | null>;
   findByIdAnyOwner(id: ApplyTaskId): Promise<ApplyTask | null>;
   listForUser(userId: UserId, opts?: { stage?: string }): Promise<ApplyTask[]>;
   save(task: ApplyTask): Promise<void>;
+  /** Task 052 — the review-diff read endpoint's data source: every recorded step, oldest first. */
+  listSteps(id: ApplyTaskId): Promise<ApplyTaskStepRecord[]>;
 }
 
 /** Emitted by aggregates, drained by repositories, written to the outbox (ADR-007). */

@@ -15,6 +15,7 @@ import {
 } from '@careerpilot/infrastructure';
 import { JobPosting, Document, isOk, ok } from '@careerpilot/domain';
 import type { BrowserSubmitPort } from '@careerpilot/application';
+import type { BrowserRunnerFieldsPort } from '../../src/lib/browser-runner-client.js';
 import { buildApp } from '../../src/app.js';
 import type { FastifyInstance } from 'fastify';
 
@@ -38,6 +39,7 @@ describe('apply-tasks routes (tasks 052/053, real Postgres + Redis)', () => {
   let documents: DrizzleDocumentRepository;
   let storageDir: string;
   let browserSubmit: BrowserSubmitPort & { calls: string[]; nextResult: Awaited<ReturnType<BrowserSubmitPort['submit']>> };
+  let browserRunnerFields: BrowserRunnerFieldsPort & { calls: string[]; nextResult: Awaited<ReturnType<BrowserRunnerFieldsPort['getFields']>> };
 
   beforeEach(async () => {
     const conn = createDb(TEST_DATABASE_URL);
@@ -66,6 +68,18 @@ describe('apply-tasks routes (tasks 052/053, real Postgres + Redis)', () => {
       },
     };
 
+    browserRunnerFields = {
+      calls: [],
+      nextResult: ok([
+        { taxonomyKey: 'firstName', label: 'First name', selector: '#first_name', mappedValue: 'Ada', neverAutoFill: false, confidence: 0.98, source: 'known_ats' },
+        { taxonomyKey: 'eeoGender', label: 'Gender (voluntary self-identification)', selector: '#eeo_gender', mappedValue: null, neverAutoFill: true, confidence: 0, source: 'known_ats' },
+      ]),
+      async getFields(applyTaskId: string) {
+        this.calls.push(applyTaskId);
+        return this.nextResult;
+      },
+    };
+
     app = await buildApp({
       db, redis,
       uow: new DrizzleUnitOfWork(db),
@@ -87,6 +101,7 @@ describe('apply-tasks routes (tasks 052/053, real Postgres + Redis)', () => {
       applyTasks: new DrizzleApplyTaskRepository(db, new DrizzleOutboxPort(db)),
       approvalTokens: new RedisApprovalTokenAdapter(redis, 300),
       browserSubmit,
+      browserRunnerFields,
       logger: false,
     });
     await app.ready();
@@ -110,9 +125,61 @@ describe('apply-tasks routes (tasks 052/053, real Postgres + Redis)', () => {
   it('requires auth on every apply-tasks route', async () => {
     expect((await app.inject({ method: 'GET', url: '/apply-tasks' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'POST', url: '/apply-tasks', payload: {} })).statusCode).toBe(401);
+    expect((await app.inject({ method: 'GET', url: '/apply-tasks/x/fields' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'POST', url: '/apply-tasks/x/approve' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'POST', url: '/apply-tasks/x/reject' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'POST', url: '/apply-tasks/x/submit', payload: { token: 'x' } })).statusCode).toBe(401);
+  });
+
+  it('GET /apply-tasks/:id/fields — the ADR-003 review diff: real ownership check, real stage gate, real proxy to browser-runner', async () => {
+    const { cookie, userId } = await registerAndLogin('fieldsflow@test.com');
+    const jobR = JobPosting.createManual({ userId: userId as never, title: 'Engineer', descriptionMd: 'd' });
+    if (!isOk(jobR)) throw new Error('setup');
+    await jobPostings.save(jobR.value);
+    const appCreateRes = await app.inject({ method: 'POST', url: '/applications', headers: { cookie }, payload: { jobPostingId: jobR.value.id } });
+    const applicationId = appCreateRes.json().applicationId as string;
+    const docR = Document.create({ userId: userId as never, kind: 'resume', title: 'Resume' });
+    if (!isOk(docR)) throw new Error('setup');
+    const document = docR.value;
+    const versionR = document.addVersion({
+      source: 'imported',
+      content: { schemaVersion: 1, kind: 'resume', contact: { name: 'A', email: 'a@b.com' }, summary: null, sections: [] },
+    });
+    if (!isOk(versionR)) throw new Error('setup');
+    await documents.save(document);
+
+    const startRes = await app.inject({
+      method: 'POST', url: '/apply-tasks', headers: { cookie },
+      payload: { applicationId, documentId: document.id, documentVersionId: versionR.value.id },
+    });
+    const applyTaskId = startRes.json().applyTaskId as string;
+
+    // Not yet in awaiting_review/approved — no diff to review yet.
+    const tooEarlyRes = await app.inject({ method: 'GET', url: `/apply-tasks/${applyTaskId}/fields`, headers: { cookie } });
+    expect(tooEarlyRes.statusCode).toBe(409);
+    expect(browserRunnerFields.calls).toHaveLength(0);
+
+    const applyTasks = new DrizzleApplyTaskRepository(db, new DrizzleOutboxPort(db));
+    const task = await applyTasks.findByIdForUser(applyTaskId as never, userId as never);
+    task!.transitionTo('mapping'); task!.transitionTo('filling'); task!.transitionTo('awaiting_review');
+    await applyTasks.save(task!);
+
+    const fieldsRes = await app.inject({ method: 'GET', url: `/apply-tasks/${applyTaskId}/fields`, headers: { cookie } });
+    expect(fieldsRes.statusCode).toBe(200);
+    expect(browserRunnerFields.calls).toEqual([applyTaskId]);
+    const fields = fieldsRes.json().fields as { taxonomyKey: string; mappedValue: string | null; neverAutoFill: boolean }[];
+    expect(fields).toHaveLength(2);
+    const nameField = fields.find((f) => f.taxonomyKey === 'firstName');
+    expect(nameField?.mappedValue).toBe('Ada');
+    // The sensitive field is present (so the UI can surface it) but its value is NEVER populated.
+    const sensitiveField = fields.find((f) => f.taxonomyKey === 'eeoGender');
+    expect(sensitiveField?.neverAutoFill).toBe(true);
+    expect(sensitiveField?.mappedValue).toBeNull();
+
+    // Ownership-scoped — a different user can't read this task's diff.
+    const { cookie: otherCookie } = await registerAndLogin('other-fieldsflow@test.com');
+    const crossOwnerRes = await app.inject({ method: 'GET', url: `/apply-tasks/${applyTaskId}/fields`, headers: { cookie: otherCookie } });
+    expect(crossOwnerRes.statusCode).toBe(404);
   });
 
   it('full happy path: start → approve (mints token) → submit — real round trip through Postgres+Redis', async () => {

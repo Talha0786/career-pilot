@@ -33,6 +33,19 @@ export interface FillStepRecord {
   readonly action: 'fill' | 'select' | 'upload' | 'skip-no-value' | 'skip-sensitive' | 'error';
   /** Redacted per §6 — never the raw value, only whether one was applied and (on error) the error class. */
   readonly detail: string | null;
+  /**
+   * Task 052 — carried through from the field map so the review-diff
+   * endpoint (`task-api.ts`'s `GET /internal/tasks/:id/fields`) can
+   * reconstruct "how was this decided" without a second lookup. Still
+   * NEVER the actual filled VALUE (§6's redaction rule is about this
+   * audit-log row specifically) — the diff endpoint reads the real
+   * submittable value separately, from the LIVE page DOM, which is the
+   * only place a "what will actually be submitted" answer can honestly
+   * come from.
+   */
+  readonly confidence: number;
+  readonly source: 'known_ats' | 'heuristic' | 'llm';
+  readonly neverAutoFill: boolean;
 }
 
 export interface FillRunnerOutput {
@@ -70,7 +83,10 @@ export async function runFillStage(
     // by the state machine; `recordAction` is the in-stage action-log path
     // task 045 added specifically for this).
     for (const s of output.steps) {
-      input.task.recordAction(s.action, { taxonomyKey: s.taxonomyKey, selector: s.selector, detail: s.detail });
+      input.task.recordAction(s.action, {
+        taxonomyKey: s.taxonomyKey, selector: s.selector, detail: s.detail,
+        confidence: s.confidence, source: s.source, neverAutoFill: s.neverAutoFill,
+      });
     }
 
     const completion = input.task.transitionTo('awaiting_review', 'fill-complete', {
@@ -93,29 +109,31 @@ async function fillAllFields(input: FillRunnerInput): Promise<FillRunnerOutput> 
   let filledCount = 0;
 
   for (const field of input.fieldMap) {
+    const base = { selector: field.selector, taxonomyKey: field.taxonomyKey, confidence: field.confidence, source: field.source, neverAutoFill: field.neverAutoFill };
+
     if (field.neverAutoFill) {
-      steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'skip-sensitive', detail: null });
+      steps.push({ ...base, action: 'skip-sensitive', detail: null });
       continue;
     }
 
     if (field.taxonomyKey === 'resumeUpload' || field.taxonomyKey === 'coverLetterUpload') {
       if (!input.resumeFilePath) {
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'skip-no-value', detail: null });
+        steps.push({ ...base, action: 'skip-no-value', detail: null });
         continue;
       }
       try {
         await input.page.setInputFiles(field.selector, input.resumeFilePath);
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'upload', detail: 'ok' });
+        steps.push({ ...base, action: 'upload', detail: 'ok' });
         filledCount++;
       } catch (e) {
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'error', detail: errorClass(e) });
+        steps.push({ ...base, action: 'error', detail: errorClass(e) });
       }
       continue;
     }
 
     const value = input.valuesByKey[field.taxonomyKey];
     if (value === undefined) {
-      steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'skip-no-value', detail: null });
+      steps.push({ ...base, action: 'skip-no-value', detail: null });
       continue;
     }
 
@@ -123,18 +141,18 @@ async function fillAllFields(input: FillRunnerInput): Promise<FillRunnerOutput> 
       const inputType = TAXONOMY[field.taxonomyKey].inputType;
       if (inputType === 'select') {
         await input.page.selectOption(field.selector, value);
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'select', detail: 'ok' });
+        steps.push({ ...base, action: 'select', detail: 'ok' });
       } else if (inputType === 'radio') {
         // Radio groups share one selector across multiple <input>s — pick the option whose value matches.
         await input.page.locator(`${field.selector}[value="${value}"]`).check();
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'select', detail: 'ok' });
+        steps.push({ ...base, action: 'select', detail: 'ok' });
       } else {
         await input.page.fill(field.selector, value);
-        steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'fill', detail: 'ok' });
+        steps.push({ ...base, action: 'fill', detail: 'ok' });
       }
       filledCount++;
     } catch (e) {
-      steps.push({ selector: field.selector, taxonomyKey: field.taxonomyKey, action: 'error', detail: errorClass(e) });
+      steps.push({ ...base, action: 'error', detail: errorClass(e) });
     }
   }
 

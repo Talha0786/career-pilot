@@ -74,9 +74,9 @@ Every task file (`NNN.md`) has exactly these sections:
 | [047](047.md) | apps/browser-runner scaffold + Playwright + internal task API | M6 | DONE |
 | [048](048.md) | Known-ATS field maps (Greenhouse, Lever, Ashby, Workday) | M6 | DONE |
 | [049](049.md) | Heuristic field detection | M6 | DONE |
-| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | IN PROGRESS (pipeline done; eval not run — no LLM reachable in sandbox) |
+| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | DONE (pipeline); eval run for real against 2 real models, gate not met (0% P0) — task 055's floor is the mitigation |
 | [051](051.md) | Mapping/filling orchestration + document-attachment gate | M6 | DONE |
-| [052](052.md) | Screencast + batch review queue UI | M6 | IN PROGRESS (API + UI done; screencast + live field-diff wiring deferred) |
+| [052](052.md) | Screencast + batch review queue UI | M6 | DONE (field diff live-wired); screencast deferred/documented |
 | [053](053.md) | Submit path: exactly-once via approval token | M6 | DONE |
 | [054](054.md) | mock-ATS e2e fixture app + Playwright e2e | M6 | DONE |
 | [055](055.md) | Degradation ladder + copy-paste-assist mode | M6 | DONE |

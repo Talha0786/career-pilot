@@ -107,6 +107,7 @@ export function makeMapFieldsWithLlmUseCase(deps: { llm: GuardedLlmPort; prompts
         taxonomyKey: key,
         confidence: sensitive ? 0 : entry.confidence,
         neverAutoFill: sensitive,
+        source: 'llm',
       });
     }
 

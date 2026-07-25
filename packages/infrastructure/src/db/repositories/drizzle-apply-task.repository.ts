@@ -8,7 +8,7 @@ import {
   asDocumentVersionId,
   uuidv7,
 } from '@careerpilot/domain';
-import type { ApplyTaskRepository, OutboxPort } from '@careerpilot/application';
+import type { ApplyTaskRepository, ApplyTaskStepRecord, OutboxPort } from '@careerpilot/application';
 import type { Db } from '../client.js';
 import { applyTasks, applyTaskSteps } from '../schema/index.js';
 
@@ -115,6 +115,23 @@ export class DrizzleApplyTaskRepository implements ApplyTaskRepository {
       const events = task.pullEvents();
       if (events.length > 0) await this.outbox.enqueue(events);
     }
+  }
+
+  /** Task 052 — the review-diff endpoint's read source, oldest first (append-only table, migration 0007). */
+  async listSteps(id: ReturnType<typeof asApplyTaskId>): Promise<ApplyTaskStepRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(applyTaskSteps)
+      .where(eq(applyTaskSteps.applyTaskId, id))
+      .orderBy(applyTaskSteps.createdAt);
+    return rows.map((r) => ({
+      fromStage: r.fromStage,
+      toStage: r.toStage,
+      action: r.action,
+      redactedPayload: r.redactedPayload as Record<string, unknown> | null,
+      screenshotKey: r.screenshotKey,
+      createdAt: r.createdAt,
+    }));
   }
 
   private toDomain(row: typeof applyTasks.$inferSelect): ApplyTask {

@@ -1,5 +1,5 @@
 import { Badge, Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '@careerpilot/ui';
-import type { ApplyTaskFieldDiffEntryDto } from '@careerpilot/contracts';
+import type { ApplyTaskFieldDiffEntry } from '@/lib/api/apply';
 
 /**
  * Task 052 — the field-value diff: "mapped value vs. taxonomy field vs.
@@ -8,17 +8,24 @@ import type { ApplyTaskFieldDiffEntryDto } from '@careerpilot/contracts';
  * UI-level restatement of the same invariant tasks 048/049/050 enforce
  * upstream (never trust a single layer alone).
  *
- * WIRING NOTE (documented scope decision, not silently incomplete): this
- * is a presentational component taking `entries` as a prop — there is no
- * live `GET /apply-tasks/:id/fields` endpoint yet returning
- * `ApplyTaskFieldDiffEntryDto[]` (the field-level detail lives in
- * `apply_task_steps` rows today, task 044/051, but no dedicated read route
- * projects it into this shape). Given this milestone's time budget, the
- * route/query wiring is a follow-up; this component is real and ready for
- * it. `apps/web/src/app/apply/review/page.tsx` does not currently render
- * this component for that reason — see that file's own comment.
+ * NOW WIRED to live data (this task's follow-up over the original draft):
+ * `apps/browser-runner/src/task-api.ts`'s `GET /internal/tasks/:id/fields`
+ * reconstructs the field map from `apply_task_steps` and reads the
+ * CURRENT value back from the live page DOM for non-sensitive fields;
+ * `apps/api/src/routes/apply.ts`'s `GET /apply-tasks/:id/fields` proxies
+ * that (ownership-checked, stage-gated); `apps/web/src/app/apply/review/page.tsx`
+ * fetches it per-task and renders this component. Takes the web client's
+ * own local `ApplyTaskFieldDiffEntry` shape (not the `@careerpilot/contracts`
+ * DTO) — consistent with this feature's existing convention
+ * (`apps/web/src/lib/api/apply.ts`'s own doc comment) of plain local
+ * interfaces on this client, promoting to real zod contracts being a
+ * reasonable follow-up.
  */
-export function FieldDiffView(props: { entries: readonly ApplyTaskFieldDiffEntryDto[] }) {
+export function FieldDiffView(props: { entries: readonly ApplyTaskFieldDiffEntry[] }) {
+  if (props.entries.length === 0) {
+    return <p>No fields were mapped for this application yet.</p>;
+  }
+
   return (
     <Table>
       <TableHead>

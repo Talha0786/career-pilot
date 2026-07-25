@@ -29,7 +29,7 @@ export class PlaywrightFieldDetectionAdapter implements FieldDetectionPort {
     if (known) {
       for (const [key, sel] of Object.entries(known.selectors)) {
         if (!sel) continue;
-        detected.push({ selector: sel.selector, taxonomyKey: key as DetectedField['taxonomyKey'], confidence: sel.neverAutoFill ? 0 : 0.98, neverAutoFill: sel.neverAutoFill });
+        detected.push({ selector: sel.selector, taxonomyKey: key as DetectedField['taxonomyKey'], confidence: sel.neverAutoFill ? 0 : 0.98, neverAutoFill: sel.neverAutoFill, source: 'known_ats' });
       }
     }
 
@@ -40,7 +40,7 @@ export class PlaywrightFieldDetectionAdapter implements FieldDetectionPort {
     const remainingFields = allFields.filter((f) => !knownSelectors.has(f.selector));
     const heuristicMatches = mapFormFieldsHeuristically(remainingFields);
     for (const m of heuristicMatches) {
-      detected.push({ selector: m.selector, taxonomyKey: m.taxonomyKey, confidence: m.confidence, neverAutoFill: m.neverAutoFill });
+      detected.push({ selector: m.selector, taxonomyKey: m.taxonomyKey, confidence: m.confidence, neverAutoFill: m.neverAutoFill, source: 'heuristic' });
     }
 
     return {

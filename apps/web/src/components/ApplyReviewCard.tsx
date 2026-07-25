@@ -14,8 +14,10 @@ export function ApplyReviewCard(props: {
   busy: boolean;
   onApprove: () => void;
   onReject: () => void;
+  onToggleDetails: () => void;
+  detailsOpen: boolean;
 }) {
-  const { task, busy, onApprove, onReject } = props;
+  const { task, busy, onApprove, onReject, onToggleDetails, detailsOpen } = props;
 
   return (
     <Card>
@@ -30,6 +32,9 @@ export function ApplyReviewCard(props: {
         <p>Last updated: {new Date(task.updatedAt).toLocaleString()}</p>
       </CardContent>
       <CardFooter>
+        <Button variant="outline" onClick={onToggleDetails}>
+          {detailsOpen ? 'Hide field diff' : 'Review field diff'}
+        </Button>
         <Button variant="secondary" disabled={busy} onClick={onReject}>
           Reject
         </Button>

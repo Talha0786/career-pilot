@@ -27,12 +27,26 @@ export interface ApproveResponse {
   expiresAt: string;
 }
 
+/** Task 052 — the field-level review diff (ADR-003). Mirrors `packages/contracts/src/field-mapping.ts`'s `ApplyTaskFieldDiffEntrySchema`. */
+export interface ApplyTaskFieldDiffEntry {
+  taxonomyKey: string;
+  label: string;
+  selector: string;
+  mappedValue: string | null;
+  neverAutoFill: boolean;
+  confidence: number;
+  source: 'known_ats' | 'heuristic' | 'llm';
+}
+
 export const applyApi = {
   list: (stage?: string) =>
     request<{ tasks: ApplyTaskListItem[] }>(`/apply-tasks${stage ? `?stage=${encodeURIComponent(stage)}` : ''}`),
 
   start: (body: { applicationId: string; documentId: string; documentVersionId: string }) =>
     request<StartApplyTaskResponse>('/apply-tasks', { method: 'POST', body: JSON.stringify(body) }),
+
+  fields: (id: string) =>
+    request<{ fields: ApplyTaskFieldDiffEntry[] }>(`/apply-tasks/${id}/fields`),
 
   approve: (id: string) =>
     request<ApproveResponse>(`/apply-tasks/${id}/approve`, { method: 'POST' }),

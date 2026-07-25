@@ -35,9 +35,9 @@ test('fills real text fields, uploads a file, and skips a sensitive field — ag
   const repo = new StubApplyTaskRepository() as unknown as ApplyTaskRepository;
 
   const fieldMap: DetectedField[] = [
-    { selector: '#first_name', taxonomyKey: 'firstName', confidence: 0.98, neverAutoFill: false },
-    { selector: '#email', taxonomyKey: 'email', confidence: 0.98, neverAutoFill: false },
-    { selector: '#eeo_gender', taxonomyKey: 'eeoGender', confidence: 0, neverAutoFill: true },
+    { selector: '#first_name', taxonomyKey: 'firstName', confidence: 0.98, neverAutoFill: false, source: 'known_ats' },
+    { selector: '#email', taxonomyKey: 'email', confidence: 0.98, neverAutoFill: false, source: 'known_ats' },
+    { selector: '#eeo_gender', taxonomyKey: 'eeoGender', confidence: 0, neverAutoFill: true, source: 'known_ats' },
   ];
 
   const result = await runFillStage(
@@ -71,7 +71,7 @@ test('a field with no resolved value is skipped (left blank), not guessed', asyn
   const result = await runFillStage(
     {
       page, task,
-      fieldMap: [{ selector: '#phone', taxonomyKey: 'phone', confidence: 0.9, neverAutoFill: false }],
+      fieldMap: [{ selector: '#phone', taxonomyKey: 'phone', confidence: 0.9, neverAutoFill: false, source: 'heuristic' }],
       valuesByKey: {}, // no phone value resolved
       resumeFilePath: null,
     },
@@ -95,7 +95,7 @@ test('filling that exceeds the timeout transitions the task to failed', async ({
   const result = await runFillStage(
     {
       page, task,
-      fieldMap: [{ selector: '#first_name', taxonomyKey: 'firstName', confidence: 0.9, neverAutoFill: false }],
+      fieldMap: [{ selector: '#first_name', taxonomyKey: 'firstName', confidence: 0.9, neverAutoFill: false, source: 'known_ats' }],
       valuesByKey: { firstName: 'Ada' },
       resumeFilePath: null,
       timeoutMs: 0,

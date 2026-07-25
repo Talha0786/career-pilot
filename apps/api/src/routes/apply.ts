@@ -5,6 +5,7 @@ import {
 import type { ApplyTaskRepository, ApplicationRepository, DocumentRepository, ApprovalTokenPort, BrowserSubmitPort } from '@careerpilot/application';
 import { sendDomainError } from '../lib/problem.js';
 import { requireAuth } from '../plugins/auth.js';
+import type { BrowserRunnerFieldsPort } from '../lib/browser-runner-client.js';
 
 /**
  * Tasks 052/053 — the batch review queue's API surface (ADR-003: "the UI
@@ -27,6 +28,7 @@ export function registerApplyRoutes(
     documents: DocumentRepository;
     approvalTokens: ApprovalTokenPort;
     browserSubmit: BrowserSubmitPort;
+    browserRunnerFields: BrowserRunnerFieldsPort;
   },
 ): void {
   const startApplyTask = makeStartApplyTaskUseCase({
@@ -62,6 +64,31 @@ export function registerApplyRoutes(
         stage: t.stage, atsAdapter: t.atsAdapter, updatedAt: t.updatedAt.toISOString(),
       })),
     });
+  });
+
+  /**
+   * Task 052 — the field-level review diff ADR-003 requires ("a human
+   * must review a field-level diff... before every submission"). Without
+   * this route the review-queue UI has field metadata (from `GET
+   * /apply-tasks`) but nothing to actually show the user for review — this
+   * closes that gap. Available for a task in `awaiting_review` OR
+   * `approved` (a user re-checking what they just approved, before the
+   * submit click, is a legitimate read too — this route never mutates
+   * anything and never touches the approval token).
+   */
+  app.get<{ Params: { id: string } }>('/apply-tasks/:id/fields', { preHandler: requireAuth }, async (request, reply) => {
+    const task = await deps.applyTasks.findByIdForUser(request.params.id as never, request.actor!.userId);
+    if (!task) return reply.code(404).send({ error: 'not_found' });
+    if (task.stage !== 'awaiting_review' && task.stage !== 'approved') {
+      return reply.code(409).send({ error: 'conflict', message: `ApplyTask is in stage '${task.stage}' — no field diff to review` });
+    }
+
+    const result = await deps.browserRunnerFields.getFields(task.id);
+    if (!result.ok) {
+      request.log.warn({ err: result.error }, 'failed to fetch field diff from browser-runner');
+      return reply.code(502).send({ error: 'browser_runner_unavailable', message: result.error.message });
+    }
+    return reply.send({ fields: result.value });
   });
 
   app.post<{ Params: { id: string } }>('/apply-tasks/:id/approve', { preHandler: requireAuth }, async (request, reply) => {

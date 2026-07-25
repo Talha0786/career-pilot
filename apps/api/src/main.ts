@@ -25,7 +25,7 @@ import {
 } from '@careerpilot/infrastructure';
 import type { JobEmbeddedEvent, DocumentTailoredEvent } from '@careerpilot/contracts';
 import { buildApp } from './app.js';
-import { HttpBrowserSubmitClient } from './lib/browser-runner-client.js';
+import { HttpBrowserSubmitClient, HttpBrowserRunnerFieldsClient } from './lib/browser-runner-client.js';
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -68,6 +68,7 @@ async function main(): Promise<void> {
   const applyTasks = new DrizzleApplyTaskRepository(db, new DrizzleOutboxPort(db));
   const approvalTokens = new RedisApprovalTokenAdapter(redis, env.approvalTokenTtlSeconds);
   const browserSubmit = new HttpBrowserSubmitClient(env.browserRunnerUrl, env.browserRunnerServiceToken);
+  const browserRunnerFields = new HttpBrowserRunnerFieldsClient(env.browserRunnerUrl, env.browserRunnerServiceToken);
 
   const app = await buildApp({
     db,
@@ -91,6 +92,7 @@ async function main(): Promise<void> {
     applyTasks,
     approvalTokens,
     browserSubmit,
+    browserRunnerFields,
     logger: { level: env.logLevel },
   });
 
