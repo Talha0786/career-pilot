@@ -11,6 +11,7 @@ import type { InterviewPrepRepository, InterviewPrepRecord, InterviewPrepKind } 
 import type { WebSearchPort, WebSearchResult, WebFetchPort, WebFetchResult } from '../src/ports/research.port.js';
 import type { ApplicationNoteRepository, ApplicationNote } from '../src/ports/repositories.js';
 import type { ApplyTaskPort, PrepareApplicationResult } from '../src/ports/apply-task.port.js';
+import type { ApprovalTokenPort, ApprovalTokenConsumeError } from '../src/ports/approval-token.port.js';
 
 /** Deterministic fake — no network, ever. The default in all unit tests. */
 export class FakeLlmPort implements LlmPort {
@@ -202,6 +203,39 @@ export class FakeApplyTaskPort implements ApplyTaskPort {
   async startAndMapToReview(input: { applicationId: string; userId: string }): Promise<Result<PrepareApplicationResult, DomainError>> {
     this.calls.push(input);
     return ok({ applyTaskId: `applytask-${this.calls.length}`, state: 'awaiting_review' });
+  }
+}
+
+/**
+ * Task 046 — in-memory fake mirroring `RedisApprovalTokenAdapter`'s
+ * exactly-once contract (tombstone on consume, not delete, so
+ * `already_consumed` vs `expired` vs `invalid` stay distinguishable). Used
+ * by task 046's own unit tests and by task 053's submit-path unit tests
+ * (the property test that no code path reaches `submitting` without a
+ * consumed token doesn't need REAL Redis to prove the CALLER discipline —
+ * only task 046's own integration test needs real Redis, to prove the
+ * concurrency primitive itself).
+ */
+export class InMemoryApprovalTokenAdapter implements ApprovalTokenPort {
+  private tokens = new Map<string, { applyTaskId: string; expiresAtMs: number; status: 'active' | 'consumed' }>();
+  private seq = 0;
+  public now: () => number = () => Date.now();
+
+  async mint(applyTaskId: string): Promise<{ token: string; expiresAt: Date }> {
+    this.seq += 1;
+    const token = `fake-token-${this.seq}`;
+    const expiresAtMs = this.now() + 5 * 60 * 1000;
+    this.tokens.set(token, { applyTaskId, expiresAtMs, status: 'active' });
+    return { token, expiresAt: new Date(expiresAtMs) };
+  }
+
+  async consume(token: string): Promise<Result<string, ApprovalTokenConsumeError>> {
+    const entry = this.tokens.get(token);
+    if (!entry) return err('invalid');
+    if (entry.status === 'consumed') return err('already_consumed');
+    if (this.now() > entry.expiresAtMs) return err('expired');
+    entry.status = 'consumed';
+    return ok(entry.applyTaskId);
   }
 }
 

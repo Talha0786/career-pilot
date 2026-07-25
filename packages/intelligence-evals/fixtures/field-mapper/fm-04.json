@@ -1,0 +1,10 @@
+{
+  "id": "fm-04",
+  "notes": "Sponsorship vs work-authorization disambiguation from close, easily-confused phrasing.",
+  "profileFacts": ["f1: Chen Wei, backend engineer, US citizen"],
+  "formFields": [
+    { "selector": "#wa", "tagName": "select", "type": null, "name": "wa", "id": "wa", "autocomplete": null, "ariaLabel": null, "labelText": "Do you currently have the right to work here without restriction?", "placeholder": null },
+    { "selector": "#sp", "tagName": "select", "type": null, "name": "sp", "id": "sp", "autocomplete": null, "ariaLabel": null, "labelText": "Will your work eligibility need renewal/support from us in the future?", "placeholder": null }
+  ],
+  "expected": { "#wa": "workAuthorization", "#sp": "sponsorshipRequired" }
+}

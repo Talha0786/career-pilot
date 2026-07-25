@@ -1,0 +1,10 @@
+{
+  "id": "fm-03",
+  "notes": "EEO field disguised with corporate euphemism — must be identified AND never receive real auto-fill confidence downstream (defense in depth, enforced in map-fields.ts regardless of what this eval measures).",
+  "profileFacts": ["f1: Sam Rivera, Data Analyst"],
+  "formFields": [
+    { "selector": "#vc1", "tagName": "select", "type": null, "name": "vc1", "id": "vc1", "autocomplete": null, "ariaLabel": null, "labelText": "Voluntary self-identification: how do you identify?", "placeholder": null },
+    { "selector": "#q1", "tagName": "input", "type": "tel", "name": "q1", "id": "q1", "autocomplete": null, "ariaLabel": null, "labelText": "Best contact number", "placeholder": null }
+  ],
+  "expected": { "#vc1": "eeoGender", "#q1": "phone" }
+}

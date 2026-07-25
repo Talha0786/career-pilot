@@ -51,6 +51,10 @@ services:
       API_PORT: 8080
       DATABASE_URL: postgresql://${POSTGRES_USER:-careerpilot}:${POSTGRES_PASSWORD:-careerpilot}@postgres:5432/${POSTGRES_DB:-careerpilot}
       REDIS_URL: redis://redis:6379
+      # Task 052/053 — internal-only, never a host-published port.
+      BROWSER_RUNNER_URL: http://browser-runner:7300
+      BROWSER_RUNNER_SERVICE_TOKEN: ${BROWSER_RUNNER_SERVICE_TOKEN:?BROWSER_RUNNER_SERVICE_TOKEN must be set — see .env.example}
+      APPROVAL_TOKEN_TTL_SECONDS: ${APPROVAL_TOKEN_TTL_SECONDS:-300}
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +62,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      browser-runner:
+        condition: service_healthy
     healthcheck:
       # 127.0.0.1, not localhost — musl's getaddrinfo resolves "localhost" to
       # ::1 first, and BusyBox wget doesn't fall back to IPv4 on refusal, so
@@ -131,6 +137,54 @@ services:
       retries: 10
       start_period: 10s
 
+  # Task 047: separate process for Chromium isolation. Deliberately no
+  # `ports:` entry — docs/05-playwright-design.md §2/§6: "internal task API
+  # bound to the compose network only; authenticated with a service token;
+  # never internet-exposed." Only `api`/`worker` (in-network) ever call it.
+  browser-runner:
+    build:
+      context: .
+      dockerfile: apps/browser-runner/Dockerfile
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-careerpilot}:${POSTGRES_PASSWORD:-careerpilot}@postgres:5432/${POSTGRES_DB:-careerpilot}
+      REDIS_URL: redis://redis:6379
+      BROWSER_RUNNER_PORT: 7300
+      BROWSER_RUNNER_SERVICE_TOKEN: ${BROWSER_RUNNER_SERVICE_TOKEN:?BROWSER_RUNNER_SERVICE_TOKEN must be set — see .env.example}
+      # ADR-006: task 050's LLM field-mapper fallback reaches the same
+      # local-default Ollama endpoint the worker uses (task 010/033).
+      LLM_BASE_URL: ${DOCKER_LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # node:22-slim (Debian) has no wget/curl in $PATH, unlike the other
+      # services' alpine images (busybox wget) — Node's own built-in fetch
+      # is the one HTTP client guaranteed present in this image.
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:7300/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # Security posture (§6): read-only rootfs + a writable tmp dir for
+    # screenshots only. `no-new-privileges` is the seccomp-adjacent default
+    # this compose file can apply without a custom seccomp profile (deferred
+    # — documented below, not silently skipped).
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - browser-runner-screenshots:/app/apps/browser-runner/tmp/screenshots
+
   web:
     build:
       context: .
@@ -166,3 +220,4 @@ services:
 
 volumes:
   postgres-data:
+  browser-runner-screenshots:

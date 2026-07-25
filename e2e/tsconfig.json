@@ -2,7 +2,13 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
-    "noEmit": true
+    "noEmit": true,
+    // Task 054: apply-flow.spec.ts imports apps/browser-runner's field
+    // detection/heuristic modules directly (see that spec's own doc
+    // comment) — those need DOM types for their `page.evaluate()`
+    // closures, same reasoning as apps/browser-runner/tsconfig.json's
+    // own override.
+    "lib": ["ES2023", "DOM"]
   },
   "include": ["**/*.ts"]
 }

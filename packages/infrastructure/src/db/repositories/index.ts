@@ -10,3 +10,4 @@ export * from './ingestion-run.repository.js';
 export * from './match-score.repository.js';
 export * from './interview-prep.repository.js';
 export * from './application-note.repository.js';
+export * from './drizzle-apply-task.repository.js';

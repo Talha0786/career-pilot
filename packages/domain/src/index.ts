@@ -28,3 +28,9 @@ export * from './pipeline/events.js';
 
 // Matching context
 export * from './matching/match-score.js';
+
+// Assisted-Apply context (M6)
+export * from './apply/apply-task-stage.js';
+export * from './apply/apply-task.js';
+export * from './apply/events.js';
+export * from './apply/field-taxonomy.js';

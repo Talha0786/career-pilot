@@ -11,6 +11,9 @@ import {
   DrizzleProfileRepository,
   DrizzleDocumentRepository,
   DrizzleMatchScoreRepository,
+  DrizzleApplyTaskRepository,
+  DrizzleOutboxPort,
+  RedisApprovalTokenAdapter,
   OutboxRelay,
   BullMqOutboxPublisher,
   BullMqQueuePort,
@@ -23,6 +26,7 @@ import {
 } from '@careerpilot/infrastructure';
 import type { JobEmbeddedEvent, DocumentTailoredEvent } from '@careerpilot/contracts';
 import { buildApp } from './app.js';
+import { HttpBrowserSubmitClient, HttpBrowserRunnerFieldsClient } from './lib/browser-runner-client.js';
 
 const env = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://careerpilot:careerpilot@localhost:5432/careerpilot',
@@ -30,6 +34,11 @@ const env = {
   port: Number(process.env.API_PORT ?? 8080),
   logLevel: process.env.LOG_LEVEL ?? 'info',
   documentStorageDir: process.env.DOCUMENT_STORAGE_DIR ?? './data/documents',
+  // Task 052/053 — browser-runner's internal task API (task 047), never
+  // internet-exposed; only reachable from api/worker inside the compose network.
+  browserRunnerUrl: process.env.BROWSER_RUNNER_URL ?? 'http://browser-runner:7300',
+  browserRunnerServiceToken: process.env.BROWSER_RUNNER_SERVICE_TOKEN ?? '',
+  approvalTokenTtlSeconds: Number(process.env.APPROVAL_TOKEN_TTL_SECONDS ?? 300),
 };
 
 const logger = pino({ level: env.logLevel });
@@ -57,6 +66,12 @@ async function main(): Promise<void> {
   const renderer = new DocumentRenderer();
   const storage = new LocalFileObjectStorage(env.documentStorageDir);
 
+  // Task 044/046/053 — assisted-apply.
+  const applyTasks = new DrizzleApplyTaskRepository(db, new DrizzleOutboxPort(db));
+  const approvalTokens = new RedisApprovalTokenAdapter(redis, env.approvalTokenTtlSeconds);
+  const browserSubmit = new HttpBrowserSubmitClient(env.browserRunnerUrl, env.browserRunnerServiceToken);
+  const browserRunnerFields = new HttpBrowserRunnerFieldsClient(env.browserRunnerUrl, env.browserRunnerServiceToken);
+
   const app = await buildApp({
     db,
     redis,
@@ -77,6 +92,10 @@ async function main(): Promise<void> {
     outboxRelay,
     jobQueue,
     budgetStore,
+    applyTasks,
+    approvalTokens,
+    browserSubmit,
+    browserRunnerFields,
     logger: { level: env.logLevel },
   });
 

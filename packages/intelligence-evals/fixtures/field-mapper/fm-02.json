@@ -1,0 +1,10 @@
+{
+  "id": "fm-02",
+  "notes": "Contextual phrasing for resume upload and portfolio, no 'resume'/'cv' keyword present.",
+  "profileFacts": ["f1: Priya Nair, Product Designer"],
+  "formFields": [
+    { "selector": "#doc1", "tagName": "input", "type": "file", "name": "doc1", "id": "doc1", "autocomplete": null, "ariaLabel": null, "labelText": "Attach a document describing your work history", "placeholder": null },
+    { "selector": "#link1", "tagName": "input", "type": "text", "name": "link1", "id": "link1", "autocomplete": null, "ariaLabel": null, "labelText": "Where can we see examples of your work?", "placeholder": null }
+  ],
+  "expected": { "#doc1": "resumeUpload", "#link1": "portfolioUrl" }
+}

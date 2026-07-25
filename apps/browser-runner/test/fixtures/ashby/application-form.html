@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- SYNTHETIC fixture, structurally representative of Ashby's public embed
+     conventions (id="ashby-embed-root", data-testid attributes) —
+     hand-built, not scraped. See greenhouse/application-form.html's header
+     comment for why. -->
+<html>
+  <head><title>Acme Corp — Software Engineer</title></head>
+  <body>
+    <div id="ashby-embed-root">
+      <form data-testid="application-form" action="/api/apply/12345">
+        <div data-testid="field-wrapper-name_first">
+          <label>First Name</label>
+          <input data-testid="field-input-name_first" name="_systemfield_name_first" type="text" />
+        </div>
+        <div data-testid="field-wrapper-name_last">
+          <label>Last Name</label>
+          <input data-testid="field-input-name_last" name="_systemfield_name_last" type="text" />
+        </div>
+        <div data-testid="field-wrapper-email">
+          <label>Email</label>
+          <input data-testid="field-input-email" name="_systemfield_email" type="email" />
+        </div>
+        <div data-testid="field-wrapper-phone">
+          <label>Phone</label>
+          <input data-testid="field-input-phone" name="_systemfield_phone" type="tel" />
+        </div>
+        <div data-testid="field-wrapper-resume">
+          <label>Resume</label>
+          <input data-testid="field-input-resume" name="_systemfield_resume" type="file" />
+        </div>
+        <div data-testid="field-wrapper-work_auth">
+          <label>Are you authorized to work?</label>
+          <input type="radio" data-testid="field-input-work_auth-yes" name="work_auth" value="yes" />
+          <input type="radio" data-testid="field-input-work_auth-no" name="work_auth" value="no" />
+        </div>
+        <div data-testid="field-wrapper-eeo_gender">
+          <label>Gender</label>
+          <select data-testid="field-input-eeo_gender" name="eeo_gender"><option value="">Select</option></select>
+        </div>
+        <div data-testid="field-wrapper-eeo_disability">
+          <label>Disability status</label>
+          <select data-testid="field-input-eeo_disability" name="eeo_disability"><option value="">Select</option></select>
+        </div>
+        <button type="submit" data-testid="btn-submit-application">Submit</button>
+      </form>
+    </div>
+  </body>
+</html>

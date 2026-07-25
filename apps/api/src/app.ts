@@ -19,6 +19,9 @@ import type {
   ObjectStoragePort,
   MatchScoreRepository,
   McpTokenStore,
+  ApplyTaskRepository,
+  ApprovalTokenPort,
+  BrowserSubmitPort,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
 import { registerAuthPlugin } from './plugins/auth.js';
@@ -37,6 +40,8 @@ import { registerProfileRoutes } from './routes/profile.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerMatchingRoutes } from './routes/matching.js';
 import { registerMcpTokenRoutes } from './routes/mcp-tokens.js';
+import { registerApplyRoutes } from './routes/apply.js';
+import type { BrowserRunnerFieldsPort } from './lib/browser-runner-client.js';
 import { ConnectionHub } from './ws/hub.js';
 
 declare module 'fastify' {
@@ -65,6 +70,11 @@ export interface AppDeps {
   connectorConfigs: ConnectorConfigRepository;
   matchScores: MatchScoreRepository;
   mcpTokens: McpTokenStore;
+  /** Task 052/053 — optional so every existing test that builds `AppDeps` without them keeps working unchanged; apply routes are skipped entirely when absent. */
+  applyTasks?: ApplyTaskRepository;
+  approvalTokens?: ApprovalTokenPort;
+  browserSubmit?: BrowserSubmitPort;
+  browserRunnerFields?: BrowserRunnerFieldsPort;
   /** Fastify owns and creates the pino instance from this — false disables
    * logging entirely, which is what tests want (Fastify inject is noisy
    * otherwise). */
@@ -116,6 +126,17 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   registerMcpTokenRoutes(app, { tokens: deps.mcpTokens });
   registerWsRoutes(app, { hub });
+
+  if (deps.applyTasks && deps.approvalTokens && deps.browserSubmit && deps.browserRunnerFields) {
+    registerApplyRoutes(app, {
+      applyTasks: deps.applyTasks,
+      applications: deps.applications,
+      documents: deps.documents,
+      approvalTokens: deps.approvalTokens,
+      browserSubmit: deps.browserSubmit,
+      browserRunnerFields: deps.browserRunnerFields,
+    });
+  }
 
   return app;
 }

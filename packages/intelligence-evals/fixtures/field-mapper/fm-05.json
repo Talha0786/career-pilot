@@ -1,0 +1,11 @@
+{
+  "id": "fm-05",
+  "notes": "Decoy fields (should map to null) mixed with a genuine one — tests the model doesn't over-eagerly assign every field a taxonomy key.",
+  "profileFacts": ["f1: Amara Obi, marketing lead"],
+  "formFields": [
+    { "selector": "#salary", "tagName": "input", "type": "text", "name": "salary", "id": "salary", "autocomplete": null, "ariaLabel": null, "labelText": "What compensation are you targeting?", "placeholder": null },
+    { "selector": "#notice", "tagName": "input", "type": "text", "name": "notice", "id": "notice", "autocomplete": null, "ariaLabel": null, "labelText": "Notice period", "placeholder": null },
+    { "selector": "#em", "tagName": "input", "type": "email", "name": "em", "id": "em", "autocomplete": null, "ariaLabel": null, "labelText": "Where should we send updates about your application?", "placeholder": null }
+  ],
+  "expected": { "#salary": null, "#notice": null, "#em": "email" }
+}

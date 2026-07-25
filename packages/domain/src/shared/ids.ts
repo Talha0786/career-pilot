@@ -48,6 +48,7 @@ export type ProfileSectionId = Branded<string, 'ProfileSectionId'>;
 export type DocumentId = Branded<string, 'DocumentId'>;
 export type DocumentVersionId = Branded<string, 'DocumentVersionId'>;
 export type MatchScoreId = Branded<string, 'MatchScoreId'>;
+export type ApplyTaskId = Branded<string, 'ApplyTaskId'>;
 
 export const newUserId = (): UserId => uuidv7() as UserId;
 export const newJobPostingId = (): JobPostingId => uuidv7() as JobPostingId;
@@ -57,6 +58,7 @@ export const newProfileSectionId = (): ProfileSectionId => uuidv7() as ProfileSe
 export const newDocumentId = (): DocumentId => uuidv7() as DocumentId;
 export const newDocumentVersionId = (): DocumentVersionId => uuidv7() as DocumentVersionId;
 export const newMatchScoreId = (): MatchScoreId => uuidv7() as MatchScoreId;
+export const newApplyTaskId = (): ApplyTaskId => uuidv7() as ApplyTaskId;
 
 export const asUserId = (v: string): UserId => v as UserId;
 export const asJobPostingId = (v: string): JobPostingId => v as JobPostingId;
@@ -66,3 +68,4 @@ export const asProfileSectionId = (v: string): ProfileSectionId => v as ProfileS
 export const asDocumentId = (v: string): DocumentId => v as DocumentId;
 export const asDocumentVersionId = (v: string): DocumentVersionId => v as DocumentVersionId;
 export const asMatchScoreId = (v: string): MatchScoreId => v as MatchScoreId;
+export const asApplyTaskId = (v: string): ApplyTaskId => v as ApplyTaskId;

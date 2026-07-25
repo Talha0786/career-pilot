@@ -1,0 +1,11 @@
+{
+  "id": "fm-09",
+  "notes": "Veteran + disability EEO fields under different real-world euphemisms, plus one genuine P0 field in the same batch.",
+  "profileFacts": ["f1: Lin Zhao, QA engineer"],
+  "formFields": [
+    { "selector": "#p1", "tagName": "input", "type": "tel", "name": "p1", "id": "p1", "autocomplete": null, "ariaLabel": null, "labelText": "Contact phone", "placeholder": null },
+    { "selector": "#vet", "tagName": "select", "type": null, "name": "vet", "id": "vet", "autocomplete": null, "ariaLabel": null, "labelText": "Protected veteran self-identification", "placeholder": null },
+    { "selector": "#dis", "tagName": "select", "type": null, "name": "dis", "id": "dis", "autocomplete": null, "ariaLabel": null, "labelText": "Voluntary disclosure of disability status", "placeholder": null }
+  ],
+  "expected": { "#p1": "phone", "#vet": "eeoVeteranStatus", "#dis": "eeoDisabilityStatus" }
+}

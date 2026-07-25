@@ -88,6 +88,14 @@ jobs:
       - name: Tailoring eval (task 040's 0-unsupported-claims-survive-verification hard gate)
         run: pnpm --filter @careerpilot/intelligence-evals run eval:tailoring
 
+      # Task 050: golden-set field-mapper eval, ≥95% P0-field regression
+      # gate (docs/05-playwright-design.md §7). Step-gated (unlike the
+      # matching eval) — a P0-field mis-mapping is the same class of
+      # wrong-data risk ADR-003's review-diff step exists to catch, and
+      # this gate is what's supposed to catch it before that human step.
+      - name: Field-mapper eval (task 050, ≥95% P0-field gate)
+        run: pnpm --filter @careerpilot/intelligence-evals run eval:field-mapper
+
       - name: Upload eval result JSON
         if: always()
         uses: actions/upload-artifact@v4
@@ -133,3 +141,31 @@ jobs:
         if: failure()
         run: |
           echo "::warning::One or more connector live canaries failed — check whether the underlying public board/feed/API changed shape or moved, not necessarily a code defect. This job is non-blocking."
+
+  # Task 055: docs/05-playwright-design.md §5's "nightly canary tasks run
+  # against ATS sandbox/demo forms; failures flip the ATS adapter to
+  # DEGRADED." HONEST SCOPE NOTE: no real ATS sandbox/demo-form access is
+  # available to this project (Greenhouse/Lever/Ashby/Workday sandbox
+  # accounts aren't something an OSS repo can provision) — this job runs
+  # the LIGHTWEIGHT version the task file explicitly permits instead:
+  # task 048's own recorded-fixture Playwright tests
+  # (`apps/browser-runner/test/ats-maps.spec.ts`), on a nightly schedule,
+  # non-blocking (a fixture failure here means a REGRESSION in this repo's
+  # own selector maps, not real-world ATS drift — still worth flagging,
+  # not worth the false confidence of calling it a live sandbox canary).
+  ats-selector-canary:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @careerpilot/browser-runner exec playwright install --with-deps chromium
+      - name: Run known-ATS selector-map fixture tests (task 048)
+        run: pnpm --filter @careerpilot/browser-runner exec playwright test
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::An ATS selector map's own fixture test failed — a real DOM-structure regression in this repo's maps (not live ATS drift, since this runs against recorded fixtures, not a live sandbox — see this job's own comment for why). Treat as flipping that adapter to DEGRADED until fixed."

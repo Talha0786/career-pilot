@@ -68,24 +68,24 @@ Every task file (`NNN.md`) has exactly these sections:
 | [041](041.md) | Diff-review UI (web) | M5 | DONE |
 | [042](042.md) | Intelligence eval harness (nightly CI gate) | M5 | DONE |
 | [043](043.md) | Budget hard-stop proof (chaos/integration test) | M5 | DONE |
-| [044](044.md) | Schema: apply_tasks, apply_task_steps | M6 | TODO |
-| [045](045.md) | Domain: ApplyTask aggregate + state machine | M6 | TODO |
-| [046](046.md) | Approval token port (single-use, 5-min TTL) | M6 | TODO |
-| [047](047.md) | apps/browser-runner scaffold + Playwright + internal task API | M6 | TODO |
-| [048](048.md) | Known-ATS field maps (Greenhouse, Lever, Ashby, Workday) | M6 | TODO |
-| [049](049.md) | Heuristic field detection | M6 | TODO |
-| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | TODO |
-| [051](051.md) | Mapping/filling orchestration + document-attachment gate | M6 | TODO |
-| [052](052.md) | Screencast + batch review queue UI | M6 | TODO |
-| [053](053.md) | Submit path: exactly-once via approval token | M6 | TODO |
-| [054](054.md) | mock-ATS e2e fixture app + Playwright e2e | M6 | TODO |
-| [055](055.md) | Degradation ladder + copy-paste-assist mode | M6 | TODO |
-| [056](056.md) | apps/mcp-server scaffold + transports + bearer-token auth | M7 | TODO |
-| [057](057.md) | Read-only MCP tools | M7 | TODO |
-| [058](058.md) | Write MCP tools (never-submit boundary) | M7 | TODO |
-| [059](059.md) | MCP resources + prompts | M7 | TODO |
-| [060](060.md) | Interview prep pipeline + company research | M7 | TODO |
-| [061](061.md) | Mock interviewer (agentic chat loop) | M7 | TODO |
-| [062](062.md) | MCP contract tests + injection red-team + Claude Desktop script | M7 | TODO |
+| [044](044.md) | Schema: apply_tasks, apply_task_steps | M6 | DONE |
+| [045](045.md) | Domain: ApplyTask aggregate + state machine | M6 | DONE |
+| [046](046.md) | Approval token port (single-use, 5-min TTL) | M6 | DONE |
+| [047](047.md) | apps/browser-runner scaffold + Playwright + internal task API | M6 | DONE |
+| [048](048.md) | Known-ATS field maps (Greenhouse, Lever, Ashby, Workday) | M6 | DONE |
+| [049](049.md) | Heuristic field detection | M6 | DONE |
+| [050](050.md) | LLM field mapper (fallback) + golden-set eval | M6 | DONE (pipeline); eval run for real against 2 real models, gate not met (0% P0) — task 055's floor is the mitigation |
+| [051](051.md) | Mapping/filling orchestration + document-attachment gate | M6 | DONE |
+| [052](052.md) | Screencast + batch review queue UI | M6 | DONE (field diff live-wired); screencast deferred/documented |
+| [053](053.md) | Submit path: exactly-once via approval token | M6 | DONE |
+| [054](054.md) | mock-ATS e2e fixture app + Playwright e2e | M6 | DONE |
+| [055](055.md) | Degradation ladder + copy-paste-assist mode | M6 | DONE |
+| [056](056.md) | apps/mcp-server scaffold + transports + bearer-token auth | M7 | DONE |
+| [057](057.md) | Read-only MCP tools | M7 | DONE |
+| [058](058.md) | Write MCP tools (never-submit boundary) | M7 | DONE |
+| [059](059.md) | MCP resources + prompts | M7 | DONE |
+| [060](060.md) | Interview prep pipeline + company research | M7 | DONE |
+| [061](061.md) | Mock interviewer (agentic chat loop) | M7 | DONE |
+| [062](062.md) | MCP contract tests + injection red-team + Claude Desktop script | M7 | DONE |
 
 M3 (019-025) and M4 (026-032) ran as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. M5 (033-043) is a single sequential track: unlike M3/M4, every stage feeds the next (embeddings → prefilter → rubric scoring → tailoring → claim verification → eval harness → budget proof), so there is no clean parallel split. M6 (044-055) and M7 (056-062) run as two parallel tracks again, same shape as M3/M4: M7 depends only on M5 (already done), not on M6, so the two are independent of each other even though each is internally sequential. Milestones beyond M7 get tasks when their design is approved — not before. Speculative tasks rot.

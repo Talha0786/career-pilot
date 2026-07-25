@@ -1,0 +1,9 @@
+{
+  "id": "fm-08",
+  "notes": "Referral-source select field with non-obvious label wording.",
+  "profileFacts": ["f1: Marcus Johnson, DevOps engineer"],
+  "formFields": [
+    { "selector": "#src", "tagName": "select", "type": null, "name": "src", "id": "src", "autocomplete": null, "ariaLabel": null, "labelText": "What led you to this opening?", "placeholder": null }
+  ],
+  "expected": { "#src": "howDidYouHear" }
+}

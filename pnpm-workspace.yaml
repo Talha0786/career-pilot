@@ -2,6 +2,14 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'e2e'
+  # Task 054: e2e/mock-ats is a SECOND, separate workspace package, not
+  # broadened via 'e2e/*' — the existing 'e2e' entry is
+  # @careerpilot/e2e's own package.json (chaos tests live at
+  # e2e/chaos/*.spec.ts INSIDE that package, not as their own package.json);
+  # switching to a glob would stop pnpm from treating e2e/ itself as a
+  # workspace root. An explicit second entry is the less-disruptive option
+  # the task file named — chosen over the glob.
+  - 'e2e/mock-ats'
   - 'docs/eval'
 
 allowBuilds:

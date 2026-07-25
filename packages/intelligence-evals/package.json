@@ -9,7 +9,8 @@
     "eval": "tsx src/index.ts",
     "eval:resume-import": "tsx src/run-resume-import-eval.ts",
     "eval:matching": "tsx src/run-matching-eval.ts",
-    "eval:tailoring": "tsx src/run-tailoring-eval.ts"
+    "eval:tailoring": "tsx src/run-tailoring-eval.ts",
+    "eval:field-mapper": "tsx src/run-field-mapper-eval.ts"
   },
   "dependencies": {
     "@careerpilot/domain": "workspace:*",

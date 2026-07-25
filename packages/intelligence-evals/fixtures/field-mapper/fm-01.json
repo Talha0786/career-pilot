@@ -1,0 +1,11 @@
+{
+  "id": "fm-01",
+  "notes": "Vague single-letter/abbreviated ids no heuristic pattern would confidently match.",
+  "profileFacts": ["f1: Jordan Lee, Senior Backend Engineer", "f2: jordan.lee@example.com", "f3: +1-555-0100"],
+  "formFields": [
+    { "selector": "#q_a", "tagName": "input", "type": "text", "name": "q_a", "id": "q_a", "autocomplete": null, "ariaLabel": null, "labelText": "Given name", "placeholder": null },
+    { "selector": "#q_b", "tagName": "input", "type": "text", "name": "q_b", "id": "q_b", "autocomplete": null, "ariaLabel": null, "labelText": "Family name", "placeholder": null },
+    { "selector": "#q_c", "tagName": "input", "type": "text", "name": "q_c", "id": "q_c", "autocomplete": null, "ariaLabel": null, "labelText": "Best way to reach you electronically", "placeholder": null }
+  ],
+  "expected": { "#q_a": "firstName", "#q_b": "lastName", "#q_c": "email" }
+}

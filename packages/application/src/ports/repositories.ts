@@ -1,6 +1,6 @@
 import type {
-  User, JobPosting, Application, CareerProfile, Document, MatchScore,
-  UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId,
+  User, JobPosting, Application, CareerProfile, Document, MatchScore, ApplyTask,
+  UserId, JobPostingId, ApplicationId, CareerProfileId, DocumentId, ApplyTaskId,
 } from '@careerpilot/domain';
 import type { AuditPort } from './audit.port.js';
 
@@ -154,6 +154,13 @@ export interface IngestionRunRepository {
 
 export interface ApplicationRepository {
   findByIdForUser(id: ApplicationId, userId: UserId): Promise<Application | null>;
+  /**
+   * Task 053 — the worker's `apply.task_submitted` handler consumes an
+   * outbox event whose payload carries only `applicationId` (no user), so
+   * it has no ownership scope to check against — same shape/reasoning as
+   * `JobPostingRepository.findByIdAnyOwner` (worker path only).
+   */
+  findByIdAnyOwner(id: ApplicationId): Promise<Application | null>;
   listForUser(userId: UserId): Promise<Application[]>;
   save(app: Application): Promise<void>;
 }
@@ -216,6 +223,35 @@ export interface MatchScoreRepository {
   findByProfileAndJob(profileId: CareerProfileId, jobPostingId: JobPostingId): Promise<MatchScore | null>;
   listForProfile(profileId: CareerProfileId, opts?: { limit?: number }): Promise<MatchScore[]>;
   save(score: MatchScore): Promise<void>;
+}
+
+/**
+ * Task 045. `save` persists BOTH the current stage on `apply_tasks` AND
+ * drains+appends `task.pullSteps()` to the append-only `apply_task_steps`
+ * table, in one call — mirrors `ApplicationRepository`'s
+ * save-drains-transitions posture. `findByIdForUser` is ownership-scoped
+ * (security model §2, same as every other per-user aggregate here);
+ * `findByIdAnyOwner` exists for the browser-runner's internal task API
+ * (task 047) and worker handlers, which act on behalf of a task, not a
+ * logged-in HTTP user.
+ */
+/** Task 052 — a persisted `apply_task_steps` row, read-side projection (append-only, never mutated — see migration 0007). */
+export interface ApplyTaskStepRecord {
+  readonly fromStage: string | null;
+  readonly toStage: string;
+  readonly action: string | null;
+  readonly redactedPayload: Record<string, unknown> | null;
+  readonly screenshotKey: string | null;
+  readonly createdAt: Date;
+}
+
+export interface ApplyTaskRepository {
+  findByIdForUser(id: ApplyTaskId, userId: UserId): Promise<ApplyTask | null>;
+  findByIdAnyOwner(id: ApplyTaskId): Promise<ApplyTask | null>;
+  listForUser(userId: UserId, opts?: { stage?: string }): Promise<ApplyTask[]>;
+  save(task: ApplyTask): Promise<void>;
+  /** Task 052 — the review-diff read endpoint's data source: every recorded step, oldest first. */
+  listSteps(id: ApplyTaskId): Promise<ApplyTaskStepRecord[]>;
 }
 
 /** Emitted by aggregates, drained by repositories, written to the outbox (ADR-007). */

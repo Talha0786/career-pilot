@@ -58,6 +58,9 @@ export class FakeApplicationRepository implements ApplicationRepository {
     const app = this.byId.get(id);
     return app && app.userId === userId ? app : null;
   }
+  async findByIdAnyOwner(id: ApplicationId): Promise<Application | null> {
+    return this.byId.get(id) ?? null;
+  }
   async listForUser(userId: UserId): Promise<Application[]> {
     return [...this.byId.values()].filter((a) => a.userId === userId);
   }

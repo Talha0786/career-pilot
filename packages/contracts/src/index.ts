@@ -11,3 +11,4 @@ export * from './matching.js';
 export * from './tailoring.js';
 export * from './mcp.js';
 export * from './interview-prep.js';
+export * from './field-mapping.js';
