@@ -136,7 +136,13 @@ export function makeScoreMatchUseCase(deps: {
   };
 }
 
-async function scoreOneCandidate(args: {
+/**
+ * Exported (task 057's `match_job` MCP tool reuses this instead of
+ * forking a second implementation of the same LLM-call/repair/validate
+ * sequence) — behavior unchanged from the private helper `score-match.ts`
+ * already had; this is purely a visibility change.
+ */
+export async function scoreOneCandidate(args: {
   profile: { id: string; factsHash: string; embeddingModel: string | null };
   job: JobPosting;
   factsText: string;

@@ -1,4 +1,4 @@
-import { ok, err, type Result, type DocumentContent } from '@careerpilot/domain';
+import { ok, err, type Result, type DocumentContent, type DomainError } from '@careerpilot/domain';
 import type {
   LlmPort, EmbedRequest, EmbedResponse, CompleteRequest, CompleteResponse, LlmError,
 } from '../src/ports/llm.port.js';
@@ -7,6 +7,10 @@ import type { AiInvocationRecord } from '../src/ports/llm.port.js';
 import type { DocumentRendererPort, RenderFormat, RenderTemplate } from '../src/ports/document-renderer.port.js';
 import type { ObjectStoragePort } from '../src/ports/object-storage.port.js';
 import { PromptRenderError, type PromptStore, type PromptTemplate, type PromptError } from '../src/ports/prompt-store.port.js';
+import type { InterviewPrepRepository, InterviewPrepRecord, InterviewPrepKind } from '../src/ports/interview-prep.port.js';
+import type { WebSearchPort, WebSearchResult, WebFetchPort, WebFetchResult } from '../src/ports/research.port.js';
+import type { ApplicationNoteRepository, ApplicationNote } from '../src/ports/repositories.js';
+import type { ApplyTaskPort, PrepareApplicationResult } from '../src/ports/apply-task.port.js';
 
 /** Deterministic fake — no network, ever. The default in all unit tests. */
 export class FakeLlmPort implements LlmPort {
@@ -122,6 +126,82 @@ export class FakePromptStore implements PromptStore {
         return found.body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_w, key: string) => vars[key]!);
       },
     });
+  }
+}
+
+/** M7 (task 060/061) — in-memory `interview_preps` table, upsert-by-id, same semantics as `DrizzleInterviewPrepRepository`. */
+export class FakeInterviewPrepRepository implements InterviewPrepRepository {
+  private byId = new Map<string, InterviewPrepRecord>();
+
+  async save(record: { id: string; applicationId: string; kind: InterviewPrepKind; content: unknown }): Promise<InterviewPrepRecord> {
+    const now = new Date();
+    const created = this.byId.get(record.id)?.createdAt ?? now;
+    const saved: InterviewPrepRecord = { ...record, createdAt: created, updatedAt: now };
+    this.byId.set(record.id, saved);
+    return saved;
+  }
+  async findById(id: string): Promise<InterviewPrepRecord | null> {
+    return this.byId.get(id) ?? null;
+  }
+  async listForApplication(applicationId: string, kind?: InterviewPrepKind): Promise<InterviewPrepRecord[]> {
+    return [...this.byId.values()]
+      .filter((r) => r.applicationId === applicationId && (kind === undefined || r.kind === kind))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+}
+
+/** M7 (task 060) — a scripted search tool: tests control results per-query via `queueResults`, defaulting to empty. */
+export class FakeWebSearchPort implements WebSearchPort {
+  public calls: string[] = [];
+  private queue: WebSearchResult[][] = [];
+
+  queueResults(...results: WebSearchResult[][]): void {
+    this.queue.push(...results);
+  }
+  async search(query: string): Promise<WebSearchResult[]> {
+    this.calls.push(query);
+    return this.queue.shift() ?? [];
+  }
+}
+
+/** M7 (task 060) — a scripted fetch tool. */
+export class FakeWebFetchPort implements WebFetchPort {
+  public calls: string[] = [];
+  private queue: WebFetchResult[] = [];
+
+  queueResults(...results: WebFetchResult[]): void {
+    this.queue.push(...results);
+  }
+  async fetch(url: string): Promise<WebFetchResult> {
+    this.calls.push(url);
+    return this.queue.shift() ?? { url, title: null, text: '' };
+  }
+}
+
+export class FakeApplicationNoteRepository implements ApplicationNoteRepository {
+  public added: { id: string; applicationId: string; noteMd: string; actor: 'user' | 'system' | 'agent' }[] = [];
+  async add(note: { id: string; applicationId: string; noteMd: string; actor: 'user' | 'system' | 'agent' }): Promise<void> {
+    this.added.push(note);
+  }
+  async listForApplication(applicationId: string): Promise<ApplicationNote[]> {
+    return this.added.filter((n) => n.applicationId === applicationId).map((n) => ({ ...n, createdAt: new Date() }));
+  }
+}
+
+/**
+ * M7 (task 058) — a CONTROLLABLE fake for the adversarial
+ * "prepare_application can never reach past awaiting_review" test. Tracks
+ * every call it receives; always returns `awaiting_review` regardless of
+ * what's passed in, since (by the port's own type signature) there is no
+ * parameter that could ask for anything else — this fake exists to prove
+ * the CALLER (prepare-application.ts) never attempts to pass one, not to
+ * simulate a buggy backend.
+ */
+export class FakeApplyTaskPort implements ApplyTaskPort {
+  public calls: { applicationId: string; userId: string }[] = [];
+  async startAndMapToReview(input: { applicationId: string; userId: string }): Promise<Result<PrepareApplicationResult, DomainError>> {
+    this.calls.push(input);
+    return ok({ applyTaskId: `applytask-${this.calls.length}`, state: 'awaiting_review' });
   }
 }
 

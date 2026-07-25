@@ -159,6 +159,26 @@ export interface ApplicationRepository {
 }
 
 /**
+ * M7 (task 058, `add_application_note` MCP tool). Deliberately NOT modeled
+ * as an `Application` aggregate method/event (unlike `transitionTo`) —
+ * notes are an append-only, unordered-w.r.t.-stage annotation log with no
+ * state-machine rules to enforce, so a plain insert-only table +
+ * repository is the right weight; forcing it through the aggregate would
+ * mean inventing a domain event with no consumer.
+ */
+export interface ApplicationNote {
+  readonly id: string;
+  readonly applicationId: string;
+  readonly noteMd: string;
+  readonly actor: 'user' | 'system' | 'agent';
+  readonly createdAt: Date;
+}
+export interface ApplicationNoteRepository {
+  add(note: { id: string; applicationId: string; noteMd: string; actor: 'user' | 'system' | 'agent' }): Promise<void>;
+  listForApplication(applicationId: string): Promise<ApplicationNote[]>;
+}
+
+/**
  * M3 treats "career profile" as a per-user singleton in the API surface
  * (`GET/PUT /api/profile`, no profile id in the URL — task 022) even though
  * the schema allows multiple rows per user (design §2 `is_active` flag).
@@ -177,6 +197,8 @@ export interface DocumentRepository {
   /** Excludes soft-deleted documents unless `includeDeleted` is set. */
   listForUser(userId: UserId, opts?: { includeDeleted?: boolean }): Promise<Document[]>;
   save(document: Document): Promise<void>;
+  /** Task 058 — `get_generation_status`'s polling lookup: the document (if any) that has a version stamped with this `generationJobId`, ownership-scoped. Returns null both when no such version exists yet (still generating) and when it belongs to another user (never distinguished — same "404, not 403" posture as every other ownership-scoped lookup in this codebase). */
+  findByGenerationJobId(generationJobId: string, userId: UserId): Promise<Document | null>;
 }
 
 /**

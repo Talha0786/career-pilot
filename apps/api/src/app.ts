@@ -18,6 +18,7 @@ import type {
   DocumentRendererPort,
   ObjectStoragePort,
   MatchScoreRepository,
+  McpTokenStore,
 } from '@careerpilot/application';
 import type { Db, OutboxRelay, PostgresBudgetStore } from '@careerpilot/infrastructure';
 import { registerAuthPlugin } from './plugins/auth.js';
@@ -35,6 +36,7 @@ import { registerWsRoutes } from './routes/ws.js';
 import { registerProfileRoutes } from './routes/profile.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerMatchingRoutes } from './routes/matching.js';
+import { registerMcpTokenRoutes } from './routes/mcp-tokens.js';
 import { ConnectionHub } from './ws/hub.js';
 
 declare module 'fastify' {
@@ -62,6 +64,7 @@ export interface AppDeps {
   budgetStore: PostgresBudgetStore;
   connectorConfigs: ConnectorConfigRepository;
   matchScores: MatchScoreRepository;
+  mcpTokens: McpTokenStore;
   /** Fastify owns and creates the pino instance from this — false disables
    * logging entirely, which is what tests want (Fastify inject is noisy
    * otherwise). */
@@ -111,6 +114,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerMatchingRoutes(app, {
     profiles: deps.profiles, jobPostings: deps.jobPostings, matchScores: deps.matchScores, queue: deps.queue,
   });
+  registerMcpTokenRoutes(app, { tokens: deps.mcpTokens });
   registerWsRoutes(app, { hub });
 
   return app;

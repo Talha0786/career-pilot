@@ -4,7 +4,12 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     name: 'unit',
-    include: ['packages/*/src/**/*.test.ts', 'packages/*/test/unit/**/*.test.ts'],
+    // M7 (task 056): apps/mcp-server/src/registry.ts is the first
+    // apps-layer file with real branching logic worth fast-unit-testing
+    // with fakes (scope enforcement, catalog exactness, audit-on-every-
+    // call) rather than only via the real-Postgres/Redis integration
+    // suite -- every prior app was thin enough not to need this.
+    include: ['packages/*/src/**/*.test.ts', 'packages/*/test/unit/**/*.test.ts', 'apps/*/test/unit/**/*.test.ts'],
     environment: 'node',
     coverage: {
       provider: 'v8',

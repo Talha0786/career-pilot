@@ -108,7 +108,13 @@ export function registerDocumentRoutes(
       jobPostingId: parsed.data.jobPostingId,
     });
     if (!result.ok) return sendDomainError(reply, result.error);
-    return reply.code(202).send(result.value);
+    // Task 058 additively extended `RequestDocumentTailoringOutput` with
+    // `generationJobId` for the MCP `tailor_document` tool's polling
+    // contract — this HTTP route deliberately does NOT forward it,
+    // keeping `TailorDocumentResponseSchema`'s existing `{queued: true}`
+    // shape stable (this route relies on the WS `document.tailored` push
+    // / GET polling instead, per this handler's own comment above).
+    return reply.code(202).send({ queued: result.value.queued });
   });
 
   app.get<{ Params: { id: string; versionId: string } }>(

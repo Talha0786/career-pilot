@@ -19,6 +19,7 @@ import {
   LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
+  McpTokenAdapter,
 } from '@careerpilot/infrastructure';
 import type { JobEmbeddedEvent, DocumentTailoredEvent } from '@careerpilot/contracts';
 import { buildApp } from './app.js';
@@ -46,6 +47,7 @@ async function main(): Promise<void> {
   const profiles = new DrizzleProfileRepository(db);
   const documents = new DrizzleDocumentRepository(db);
   const matchScores = new DrizzleMatchScoreRepository(db);
+  const mcpTokens = new McpTokenAdapter(db);
   const hasher = new Argon2Hasher();
   const budgetStore = new PostgresBudgetStore(db);
   const outboxRelay = new OutboxRelay(db, new BullMqOutboxPublisher(redis));
@@ -66,6 +68,7 @@ async function main(): Promise<void> {
     profiles,
     documents,
     matchScores,
+    mcpTokens,
     queue,
     drafts,
     renderer,

@@ -340,3 +340,62 @@ export const auditLog = pgTable('audit_log', {
   detail: jsonb('detail').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** M7 (task 058) — append-only note log on an application, see `ApplicationNoteRepository`'s doc comment. */
+export const applicationNotes = pgTable('application_notes', {
+  id: uuid('id').primaryKey(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  noteMd: text('note_md').notNull(),
+  actor: transitionActorEnum('actor').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byApplication: index('application_notes_application_idx').on(t.applicationId, t.createdAt.desc()),
+}));
+
+/**
+ * M7 (task 056). Bearer tokens for the MCP server — a separate auth path
+ * from `apps/api`'s session-cookie system (MCP clients can't hold a
+ * browser cookie). Only the SHA-256 hash of the token is stored, same
+ * "never store the secret itself" posture as any credential table; the
+ * plaintext token is shown to the user exactly once, at mint time.
+ * `scopes` is a small fixed set (`read`, `write:pipeline`,
+ * `write:documents`) — stored as text[] rather than a normalized join
+ * table, matching the scale (a handful of scopes per token, never queried
+ * independently of their token).
+ */
+export const mcpTokens = pgTable('mcp_tokens', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  tokenHash: text('token_hash').notNull(),
+  scopes: jsonb('scopes').notNull().$type<string[]>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+}, (t) => ({
+  byTokenHash: uniqueIndex('mcp_tokens_token_hash_unique').on(t.tokenHash),
+  byUser: index('mcp_tokens_user_idx').on(t.userId),
+}));
+
+/**
+ * M7 (task 060). One table backs three related-but-distinct content kinds
+ * (`kind` discriminates): LLM-generated interview questions (060),
+ * citation-checked company research briefs (060), and mock-interviewer
+ * session transcripts (061) — deliberately one table per task 060's file
+ * list rather than three, since all three are "prep material attached to
+ * an application, read back as a unit" with no independent query needs
+ * that would justify splitting them.
+ */
+export const interviewPrepKindEnum = pgEnum('interview_prep_kind', [
+  'questions', 'company_research', 'mock_interview_transcript',
+]);
+export const interviewPreps = pgTable('interview_preps', {
+  id: uuid('id').primaryKey(),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  kind: interviewPrepKindEnum('kind').notNull(),
+  content: jsonb('content').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byApplication: index('interview_preps_application_idx').on(t.applicationId, t.createdAt.desc()),
+}));

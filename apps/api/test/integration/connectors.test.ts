@@ -24,6 +24,7 @@ import {
   LocalFileObjectStorage,
   PostgresBudgetStore,
   Argon2Hasher,
+  McpTokenAdapter,
 } from '@careerpilot/infrastructure';
 import { buildApp } from '../../src/app.js';
 import type { FastifyInstance } from 'fastify';
@@ -51,7 +52,7 @@ describe('GET/PATCH /connectors (task 032, real Postgres + Redis)', () => {
     db = conn.db;
     closeDb = conn.close;
     await db.execute(
-      sql`TRUNCATE audit_log, ai_invocations, outbox, stage_transitions, applications, job_postings,
+      sql`TRUNCATE audit_log, mcp_tokens, interview_preps, application_notes, ai_invocations, outbox, stage_transitions, applications, job_postings,
         ingestion_runs, connector_configs, document_versions, documents, profile_sections, career_profiles,
         users RESTART IDENTITY CASCADE`,
     );
@@ -81,6 +82,7 @@ describe('GET/PATCH /connectors (task 032, real Postgres + Redis)', () => {
       outboxRelay: new OutboxRelay(db, new BullMqOutboxPublisher(redis)),
       jobQueue,
       budgetStore: new PostgresBudgetStore(db),
+      mcpTokens: new McpTokenAdapter(db),
       logger: false,
     });
     await app.ready();

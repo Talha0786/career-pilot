@@ -8,3 +8,5 @@ export * from './outbox.repository.js';
 export * from './connector-config.repository.js';
 export * from './ingestion-run.repository.js';
 export * from './match-score.repository.js';
+export * from './interview-prep.repository.js';
+export * from './application-note.repository.js';
