@@ -87,5 +87,6 @@ Every task file (`NNN.md`) has exactly these sections:
 | [060](060.md) | Interview prep pipeline + company research | M7 | DONE |
 | [061](061.md) | Mock interviewer (agentic chat loop) | M7 | DONE |
 | [062](062.md) | MCP contract tests + injection red-team + Claude Desktop script | M7 | DONE |
+| [063](063.md) | Wire the production mapping/filling trigger + CareerProfile contact fields | M6 | TODO |
 
 M3 (019-025) and M4 (026-032) ran as two parallel tracks — each internally sequential (per-track dependencies), independent of each other except both building on M2. M5 (033-043) is a single sequential track: unlike M3/M4, every stage feeds the next (embeddings → prefilter → rubric scoring → tailoring → claim verification → eval harness → budget proof), so there is no clean parallel split. M6 (044-055) and M7 (056-062) run as two parallel tracks again, same shape as M3/M4: M7 depends only on M5 (already done), not on M6, so the two are independent of each other even though each is internally sequential. Milestones beyond M7 get tasks when their design is approved — not before. Speculative tasks rot.
