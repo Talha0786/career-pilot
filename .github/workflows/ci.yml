@@ -152,6 +152,12 @@ jobs:
       - run: pnpm --filter @careerpilot/web build
         env:
           API_ORIGIN: http://api:8080
+      # M6 (task 047) added a required BROWSER_RUNNER_SERVICE_TOKEN to
+      # docker-compose.yml (${VAR:?msg} — fails compose-file parsing, not
+      # just at runtime, if unset) — this job never had a .env, unlike
+      # e2e-compose below which already does. Same fix, same pattern.
+      - name: Prepare .env
+        run: cp .env.example .env
       - run: docker compose build
 
   # ── e2e against the real compose stack (task 013/018's own verification
